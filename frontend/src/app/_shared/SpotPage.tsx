@@ -35,13 +35,11 @@ function getHeaderValue(h: any, key: string): string | null {
 }
 
 function getOrigin() {
-  const h = headers() as any;
+  // Always prefer an explicit site URL when provided
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
 
-  const host = getHeaderValue(h, "x-forwarded-host") ?? getHeaderValue(h, "host");
-  const proto = getHeaderValue(h, "x-forwarded-proto") ?? "https";
-
-  if (!host) return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  return `${proto}://${host}`;
+  // Local dev fallback
+  return "http://localhost:3000";
 }
 
 async function getJson(pathWithQuery: string) {
