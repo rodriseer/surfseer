@@ -1,6 +1,7 @@
 import Image from "next/image";
 import SpotPicker from "@/components/SpotPicker";
 import ShareButton from "@/components/ShareButton";
+import { headers } from "next/headers";
 
 export const SPOTS = [
   { id: "oc-inlet", name: "Ocean City (Inlet)", lat: 38.3287, lon: -75.0913 },
@@ -24,8 +25,25 @@ function getBaseUrl() {
   return "http://localhost:3000";
 }
 
+function getOrigin() {
+  const h = headers();
+
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? "https";
+
+  if (!host) {
+    // super rare, but avoids crashing if headers are missing
+    return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  }
+
+  return `${proto}://${host}`;
+}
+
 async function getJson(pathWithQuery: string) {
-  const res = await fetch(pathWithQuery, { cache: "no-store" });
+  const origin = getOrigin();
+  const url = new URL(pathWithQuery, origin);
+
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) return null;
   return res.json();
 }
