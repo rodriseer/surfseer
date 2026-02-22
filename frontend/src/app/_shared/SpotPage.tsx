@@ -14,35 +14,38 @@ export type SpotId = (typeof SPOTS)[number]["id"];
 const NOAA_TIDE_STATION = "8570283"; // Ocean City Inlet, MD
 const NDBC_BUOY_STATION = "44009";
 
-function getBaseUrl() {
-  // 1) If you set a custom site URL, use it (recommended)
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+/**
+ * Build a safe origin from the incoming request headers.
+ * This avoids using VERCEL_URL (which can be a deployment-specific domain that returns 401),
+ * and also avoids relative URL fetch crashes on the server.
+ */
+function getHeaderValue(h: any, key: string): string | null {
+  if (!h) return null;
 
-  // 2) Vercel provides this automatically (no protocol)
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  // Normal case: Web Headers API
+  if (typeof h.get === "function") return h.get(key);
 
-  // 3) Local dev fallback
-  return "http://localhost:3000";
+  // Some runtimes: plain object
+  const lower = key.toLowerCase();
+  if (typeof h === "object") {
+    return (h[key] ?? h[lower] ?? null) as string | null;
+  }
+
+  return null;
 }
 
 function getOrigin() {
-  const h = headers();
+  const h = headers() as any;
 
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? "https";
+  const host = getHeaderValue(h, "x-forwarded-host") ?? getHeaderValue(h, "host");
+  const proto = getHeaderValue(h, "x-forwarded-proto") ?? "https";
 
-  if (!host) {
-    // super rare, but avoids crashing if headers are missing
-    return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  }
-
+  if (!host) return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   return `${proto}://${host}`;
 }
 
 async function getJson(pathWithQuery: string) {
-  const origin = getOrigin();
-  const url = new URL(pathWithQuery, origin);
-
+  const url = new URL(pathWithQuery, getOrigin());
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) return null;
   return res.json();
