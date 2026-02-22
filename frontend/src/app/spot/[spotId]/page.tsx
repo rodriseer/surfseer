@@ -1,9 +1,10 @@
 import SpotPage from "@/app/_shared/SpotPage";
 
-export default function Page({
+export default async function Page({
   params,
 }: {
-  params: { spotId: string };
+  params: Promise<{ spotId: string }>;
 }) {
-  return <SpotPage spotId={params.spotId} />;
+  const p = await params;
+  return <SpotPage spotId={p.spotId} />;
 }

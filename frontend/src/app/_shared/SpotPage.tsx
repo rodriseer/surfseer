@@ -1,6 +1,6 @@
 import Image from "next/image";
-import { headers } from "next/headers";
 import SpotPicker from "@/components/SpotPicker";
+import ShareButton from "@/components/ShareButton";
 
 export const SPOTS = [
   { id: "oc-inlet", name: "Ocean City (Inlet)", lat: 38.3287, lon: -75.0913 },
@@ -13,11 +13,20 @@ export type SpotId = (typeof SPOTS)[number]["id"];
 const NOAA_TIDE_STATION = "8570283"; // Ocean City Inlet, MD
 const NDBC_BUOY_STATION = "44009";
 
+function getBaseUrl() {
+  // 1) If you set a custom site URL, use it (recommended)
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+
+  // 2) Vercel provides this automatically (no protocol)
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+
+  // 3) Local dev fallback
+  return "http://localhost:3000";
+}
+
 async function getJson(pathWithQuery: string) {
-  const h = await headers();
-  const host = h.get("host");
-  const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
-  const url = `${protocol}://${host}${pathWithQuery}`;
+  const base = getBaseUrl();
+  const url = `${base}${pathWithQuery}`;
 
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) return null;
@@ -155,8 +164,6 @@ function bestWindow2h({
   waveFt: number | null;
   periodS: number | null;
 }) {
-  // Score each 2-hour window by average wind (lower is better)
-  // + tiny bonus if swell looks decent
   if (!Array.isArray(hourly) || hourly.length < 2) return null;
 
   const swellBonus =
@@ -164,8 +171,8 @@ function bestWindow2h({
       ? waveFt >= 2 && periodS >= 8
         ? 0.4
         : waveFt >= 1.5 && periodS >= 7
-        ? 0.2
-        : 0
+          ? 0.2
+          : 0
       : 0;
 
   let best: { i: number; score: number } | null = null;
@@ -177,14 +184,10 @@ function bestWindow2h({
 
     const avg = (a + b) / 2;
 
-    // Base scoring: lower wind => higher score
     let s = 10 - avg * 0.6; // 0mph=>10, 10mph=>4, 15mph=>1
     s = Math.max(0, Math.min(10, s));
 
-    // Morning preference tie-breaker (+0.15)
     if (isMorningPreferred(hourly[i].time)) s += 0.15;
-
-    // Swell bonus (small)
     s += swellBonus;
 
     if (!best || s > best.score) best = { i, score: s };
@@ -213,6 +216,7 @@ export default async function SpotPage({ spotId }: { spotId: string }) {
 
   const windMph =
     today?.wind_mph != null && Number.isFinite(today.wind_mph) ? Math.round(today.wind_mph) : null;
+
   const windDeg =
     today?.wind_dir_deg != null && Number.isFinite(today.wind_dir_deg) ? Math.round(today.wind_dir_deg) : null;
 
@@ -261,15 +265,9 @@ export default async function SpotPage({ spotId }: { spotId: string }) {
           </div>
 
           <nav className="hidden items-center gap-6 text-sm font-semibold text-zinc-600 md:flex">
-            <a className="hover:text-zinc-900" href="#today">
-              Today
-            </a>
-            <a className="hover:text-zinc-900" href="#forecast">
-              Forecast
-            </a>
-            <a className="hover:text-zinc-900" href="#about">
-              About
-            </a>
+            <a className="hover:text-zinc-900" href="#today">Today</a>
+            <a className="hover:text-zinc-900" href="#forecast">Forecast</a>
+            <a className="hover:text-zinc-900" href="#about">About</a>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -356,11 +354,7 @@ export default async function SpotPage({ spotId }: { spotId: string }) {
             <Divider />
 
             <div className="grid grid-cols-2 gap-3">
-              <Metric
-                label="Swell"
-                value={waveFt != null ? `${waveFt.toFixed(1)} ft` : "—"}
-                sub={`NDBC ${NDBC_BUOY_STATION}`}
-              />
+              <Metric label="Swell" value={waveFt != null ? `${waveFt.toFixed(1)} ft` : "—"} sub={`NDBC ${NDBC_BUOY_STATION}`} />
               <Metric label="Period" value={periodS != null ? `${periodS}s` : "—"} sub="Dominant/avg period" />
               <Metric
                 label="Wind"
@@ -388,9 +382,8 @@ export default async function SpotPage({ spotId }: { spotId: string }) {
               <button className="rounded-xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800">
                 Save as favorite
               </button>
-              <button className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold hover:bg-zinc-50">
-                Share report
-              </button>
+
+              <ShareButton className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold hover:bg-zinc-50" />
             </div>
           </div>
         </section>
