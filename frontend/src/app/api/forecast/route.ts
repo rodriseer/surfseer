@@ -1,3 +1,7 @@
+// src/app/api/forecast/route.ts
+
+export const runtime = "nodejs";
+
 import { ok, fail } from "@/lib/apiResponse";
 import { TTLCache } from "@/lib/ttlCache";
 import { fetchStormglass } from "@/lib/stormglass";
@@ -12,7 +16,12 @@ const SPOTS = [
 
 type SpotId = (typeof SPOTS)[number]["id"];
 
-const cache = new TTLCache<any>(1000 * 60 * 20); // 20 minutes
+// ✅ Lazy-init cache to avoid import-time crashes in Vercel functions
+let _cache: TTLCache<any> | null = null;
+function getCache() {
+  if (!_cache) _cache = new TTLCache<any>(1000 * 60 * 20); // 20 minutes
+  return _cache;
+}
 
 function pickNoaaNumber(obj: any): number | null {
   const n = obj?.noaa;
@@ -36,6 +45,8 @@ export async function GET(req: Request) {
 
     const selected = SPOTS.find((s) => s.id === spot) ?? SPOTS[0];
 
+    const cache = getCache();
+
     // 1) Cache hit
     const hit = cache.get(selected.id);
     if (hit.hit) {
@@ -45,7 +56,10 @@ export async function GET(req: Request) {
     // 2) Fetch fresh
     const { hours } = await fetchStormglass({ lat: selected.lat, lon: selected.lon });
 
-    const now = hours[0];
+    const now = hours?.[0];
+    if (!now) {
+      return fail("No forecast hours returned from Stormglass", 502);
+    }
 
     const windMps = pickNoaaNumber(now.windSpeed);
     const windMph = windMps != null ? Math.round(windMps * 2.23694) : null;
@@ -64,7 +78,7 @@ export async function GET(req: Request) {
       windDirBonus,
     });
 
-    const hourly = hours.slice(0, 24).map((h) => ({
+    const hourly = hours.slice(0, 24).map((h: any) => ({
       time: h.time,
       windMph:
         typeof h.windSpeed?.noaa === "number" && Number.isFinite(h.windSpeed.noaa)
@@ -76,7 +90,7 @@ export async function GET(req: Request) {
     }));
 
     const window2h = bestWindow2h({
-      hourly: hourly.map((h) => ({ time: h.time, windMph: h.windMph, windDirDeg: h.windDirDeg })),
+      hourly: hourly.map((h: any) => ({ time: h.time, windMph: h.windMph, windDirDeg: h.windDirDeg })),
       waveFt,
       periodS,
       beachFacingDeg: selected.beachFacingDeg,
@@ -94,7 +108,7 @@ export async function GET(req: Request) {
         swellDirDeg: round1(pickNoaaNumber(now.swellDirection) ?? pickNoaaNumber(now.waveDirection)),
         waterTempC: round1(pickNoaaNumber(now.waterTemperature)),
 
-        // ✅ NEW
+        // score
         score10: scored.score10,
         status: scored.status,
         take: scored.take,
@@ -102,7 +116,6 @@ export async function GET(req: Request) {
 
       hourly,
 
-      // ✅ NEW (optional)
       bestWindow2h: window2h,
     };
 
@@ -111,7 +124,9 @@ export async function GET(req: Request) {
 
     return ok(data, { cached: false });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
+    // ✅ show real error in Vercel logs
+    console.error("FORECAST ROUTE ERROR:", e);
+    const msg = e instanceof Error ? e.stack ?? e.message : String(e);
     return fail(msg, 500);
   }
 }
