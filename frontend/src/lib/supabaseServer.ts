@@ -8,8 +8,9 @@ function requiredEnv(name: string) {
 
 export const supabaseServer = () => {
   const url = requiredEnv("SUPABASE_URL");
-  const serviceKey = requiredEnv("SUPABASE_SERVICE_ROLE_KEY"); // server-only
-  return createClient(url, serviceKey, {
+  const anonKey = requiredEnv("SUPABASE_ANON_KEY"); // use publishable key instead
+
+  return createClient(url, anonKey, {
     auth: { persistSession: false },
   });
 };
