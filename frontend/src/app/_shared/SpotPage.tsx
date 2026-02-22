@@ -25,10 +25,7 @@ function getBaseUrl() {
 }
 
 async function getJson(pathWithQuery: string) {
-  const base = getBaseUrl();
-  const url = `${base}${pathWithQuery}`;
-
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(pathWithQuery, { cache: "no-store" });
   if (!res.ok) return null;
   return res.json();
 }
