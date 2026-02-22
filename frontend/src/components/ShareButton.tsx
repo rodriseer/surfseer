@@ -2,28 +2,33 @@
 
 import { useState } from "react";
 
-export default function ShareButton({ className }: { className?: string }) {
+export default function ShareButton({ className = "" }: { className?: string }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
+    const url = window.location.href;
+
     try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // Modern clipboard API (works on HTTPS, user gesture)
+      await navigator.clipboard.writeText(url);
     } catch {
-      // fallback if clipboard blocked
-      window.prompt("Copy this link:", window.location.href);
+      // Fallback for stricter browsers
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
     }
+
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   return (
-    <button
-      onClick={copy}
-      className={
-        className ??
-        "rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold hover:bg-zinc-50"
-      }
-    >
+    <button onClick={copy} className={className}>
       {copied ? "Copied ✅" : "Share report"}
     </button>
   );
