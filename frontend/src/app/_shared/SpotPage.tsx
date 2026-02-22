@@ -1,7 +1,6 @@
 import Image from "next/image";
 import SpotPicker from "@/components/SpotPicker";
 import ShareButton from "@/components/ShareButton";
-import { headers } from "next/headers";
 
 export const SPOTS = [
   { id: "oc-inlet", name: "Ocean City (Inlet)", lat: 38.3287, lon: -75.0913 },
@@ -35,10 +34,10 @@ function getHeaderValue(h: any, key: string): string | null {
 }
 
 function getOrigin() {
-  // Always prefer an explicit site URL when provided
+  // Use explicit URL in production (Vercel)
   if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
 
-  // Local dev fallback
+  // Local dev
   return "http://localhost:3000";
 }
 
