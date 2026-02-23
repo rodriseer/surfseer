@@ -5,6 +5,18 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "SurfSeer",
   description: "Ocean City + Assateague surf conditions & forecast.",
+  openGraph: {
+    title: "SurfSeer",
+    description: "Ocean City + Assateague surf conditions & forecast.",
+    url: "https://surfcheckseer.com",
+    siteName: "SurfSeer",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SurfSeer",
+    description: "Ocean City + Assateague surf conditions & forecast.",
+  },
 };
 
 function TopNav() {
