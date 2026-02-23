@@ -1,7 +1,6 @@
 // src/app/api/forecast/route.ts
 
 export const runtime = "nodejs";
-// Force dynamic behavior (prevents Next from trying to prerender/cache this route)
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -9,20 +8,17 @@ import { ok, fail } from "@/lib/apiResponse";
 import { TTLCache } from "@/lib/ttlCache";
 import { fetchStormglass } from "@/lib/stormglass";
 import { bestWindow2h, scoreSurf10, windQuality } from "@/lib/surfScore";
+import { SPOTS, type SpotId, isSpotId } from "@/lib/spots";
+import { dbCacheGet, dbCacheSet } from "@/lib/forecastDbCache";
+import { singleFlight } from "@/lib/singleFlight";
 
-// Match your spot list (keep IDs consistent with SpotPicker)
-const SPOTS = [
-  { id: "oc-inlet", name: "Ocean City (Inlet)", lat: 38.3287, lon: -75.0913, beachFacingDeg: 90 },
-  { id: "oc-north", name: "Ocean City (Northside)", lat: 38.4066, lon: -75.057, beachFacingDeg: 85 },
-  { id: "assateague", name: "Assateague", lat: 38.0534, lon: -75.2443, beachFacingDeg: 110 },
-] as const;
-
-type SpotId = (typeof SPOTS)[number]["id"];
+// ✅ Recommended: 30 minutes to stay under 500 calls/day with many spots
+const TTL_MS = 1000 * 60 * 30;
 
 // ✅ Lazy-init cache to avoid import-time crashes in Vercel functions
 let _cache: TTLCache<any> | null = null;
 function getCache() {
-  if (!_cache) _cache = new TTLCache<any>(1000 * 60 * 20); // 20 minutes
+  if (!_cache) _cache = new TTLCache<any>(TTL_MS);
   return _cache;
 }
 
@@ -41,10 +37,6 @@ function mToFt(m: number | null) {
   return round1(m * 3.28084);
 }
 
-/**
- * Stormglass returns an array of hourly points. Using hours[0] can look "stuck"
- * (often it's the first hour in the requested window). We pick the hour closest to now.
- */
 function pickCurrentHourIndex(hours: any[]): number {
   const nowMs = Date.now();
   let bestIdx = 0;
@@ -67,105 +59,127 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
 
-    const spot = (searchParams.get("spot") ?? "oc-inlet") as SpotId;
-    const selected = SPOTS.find((s) => s.id === spot) ?? SPOTS[0];
+    const rawSpot = searchParams.get("spot") ?? "oc-inlet";
+    const spotId: SpotId = isSpotId(rawSpot) ? rawSpot : "oc-inlet";
+    const selected = SPOTS[spotId];
 
-    // Optional: allow forcing a fresh call (e.g., your "Check now" button can use &force=1)
     const force = searchParams.get("force") === "1" || searchParams.get("force") === "true";
-
     const cache = getCache();
 
-    // 1) Cache hit (unless forced)
+    // 1) Memory cache hit (unless forced)
     if (!force) {
       const hit = cache.get(selected.id);
       if (hit.hit) {
-        return ok(hit.value, { cached: true });
+        return ok(hit.value, { cached: true, cacheLayer: "memory" });
       }
     }
 
-    // 2) Fetch fresh
-    const { hours } = await fetchStormglass({ lat: selected.lat, lon: selected.lon });
-    if (!hours?.length) {
-      return fail("No forecast hours returned from Stormglass", 502);
+    // 2) Supabase DB cache hit (shared across instances)
+    if (!force) {
+      const dbHit = await dbCacheGet(selected.id);
+      if (dbHit) {
+        cache.set(selected.id, dbHit); // hydrate memory
+        return ok(dbHit, { cached: true, cacheLayer: "db" });
+      }
     }
 
-    const idx = pickCurrentHourIndex(hours);
-    const now = hours[idx];
-    if (!now) {
-      return fail("No usable forecast hour returned from Stormglass", 502);
+    // 3) Fetch fresh
+// 3) Fetch fresh (single-flight per spot)
+const data = await singleFlight(`forecast:${selected.id}`, async () => {
+  // IMPORTANT: re-check caches INSIDE the lock so only one request refreshes
+  if (!force) {
+    const hit2 = cache.get(selected.id);
+    if (hit2.hit) return hit2.value;
+
+    const dbHit2 = await dbCacheGet(selected.id);
+    if (dbHit2) {
+      cache.set(selected.id, dbHit2);
+      return dbHit2;
     }
+  }
 
-    const windMps = pickNoaaNumber(now.windSpeed);
-    const windMph = windMps != null ? Math.round(windMps * 2.23694) : null;
+  const { hours } = await fetchStormglass({ lat: selected.lat, lon: selected.lon });
+  if (!hours?.length) {
+    throw new Error("No forecast hours returned from Stormglass");
+  }
 
-    const waveFt = mToFt(pickNoaaNumber(now.waveHeight) ?? pickNoaaNumber(now.swellHeight));
-    const periodS = round1(pickNoaaNumber(now.wavePeriod) ?? pickNoaaNumber(now.swellPeriod));
-    const windDirDeg = round1(pickNoaaNumber(now.windDirection));
+  const idx = pickCurrentHourIndex(hours);
+  const now = hours[idx];
+  if (!now) {
+    throw new Error("No usable forecast hour returned from Stormglass");
+  }
 
-    const windDirBonus =
-      windDirDeg != null ? windQuality(windDirDeg, selected.beachFacingDeg).bonus : 0;
+  const windMps = pickNoaaNumber(now.windSpeed);
+  const windMph = windMps != null ? Math.round(windMps * 2.23694) : null;
 
-    const scored = scoreSurf10({
-      windMph,
-      waveFt,
-      periodS,
-      windDirBonus,
-    });
+  const waveFt = mToFt(pickNoaaNumber(now.waveHeight) ?? pickNoaaNumber(now.swellHeight));
+  const periodS = round1(pickNoaaNumber(now.wavePeriod) ?? pickNoaaNumber(now.swellPeriod));
+  const windDirDeg = round1(pickNoaaNumber(now.windDirection));
 
-    const hourly = hours.slice(idx, idx + 24).map((h: any) => ({
+  const windDirBonus =
+    windDirDeg != null ? windQuality(windDirDeg, selected.beachFacingDeg).bonus : 0;
+
+  const scored = scoreSurf10({
+    windMph,
+    waveFt,
+    periodS,
+    windDirBonus,
+  });
+
+  const hourly = hours.slice(idx, idx + 24).map((h: any) => ({
+    time: h.time,
+    windMph:
+      typeof h.windSpeed?.noaa === "number" && Number.isFinite(h.windSpeed.noaa)
+        ? Math.round(h.windSpeed.noaa * 2.23694)
+        : null,
+    windDirDeg: round1(pickNoaaNumber(h.windDirection)),
+    waveHeightFt: mToFt(pickNoaaNumber(h.waveHeight) ?? pickNoaaNumber(h.swellHeight)),
+    wavePeriodS: round1(pickNoaaNumber(h.wavePeriod) ?? pickNoaaNumber(h.swellPeriod)),
+  }));
+
+  const window2h = bestWindow2h({
+    hourly: hourly.map((h: any) => ({
       time: h.time,
-      windMph:
-        typeof h.windSpeed?.noaa === "number" && Number.isFinite(h.windSpeed.noaa)
-          ? Math.round(h.windSpeed.noaa * 2.23694)
-          : null,
-      windDirDeg: round1(pickNoaaNumber(h.windDirection)),
-      waveHeightFt: mToFt(pickNoaaNumber(h.waveHeight) ?? pickNoaaNumber(h.swellHeight)),
-      wavePeriodS: round1(pickNoaaNumber(h.wavePeriod) ?? pickNoaaNumber(h.swellPeriod)),
-    }));
+      windMph: h.windMph,
+      windDirDeg: h.windDirDeg,
+    })),
+    waveFt,
+    periodS,
+    beachFacingDeg: selected.beachFacingDeg,
+  });
 
-    const window2h = bestWindow2h({
-      hourly: hourly.map((h: any) => ({ time: h.time, windMph: h.windMph, windDirDeg: h.windDirDeg })),
-      waveFt,
-      periodS,
-      beachFacingDeg: selected.beachFacingDeg,
-    });
+  const fetchedAtISO = new Date().toISOString();
 
-    // Use a real "fetched at" timestamp for your UI "Updated:" label
-    const fetchedAtISO = new Date().toISOString();
+  const fresh = {
+    spot: { id: selected.id, name: selected.name, lat: selected.lat, lon: selected.lon },
+    updatedAtISO: fetchedAtISO,
+    fetchedAtISO,
+    forecastTimeISO: now.time,
 
-    const data = {
-      spot: { id: selected.id, name: selected.name, lat: selected.lat, lon: selected.lon },
+    now: {
+      waveHeightFt: waveFt,
+      wavePeriodS: periodS,
+      windMph,
+      windDirDeg,
+      swellDirDeg: round1(pickNoaaNumber(now.swellDirection) ?? pickNoaaNumber(now.waveDirection)),
+      waterTempC: round1(pickNoaaNumber(now.waterTemperature)),
+      score10: scored.score10,
+      status: scored.status,
+      take: scored.take,
+    },
 
-      // Backwards-compatible (your UI uses this): this is when *your* server fetched.
-      updatedAtISO: fetchedAtISO,
+    hourly,
+    bestWindow2h: window2h,
+  };
 
-      // Extra clarity (optional to render in UI)
-      fetchedAtISO,
-      forecastTimeISO: now.time,
+  // Save caches (inside lock)
+  cache.set(selected.id, fresh);
+  await dbCacheSet(selected.id, fresh, TTL_MS);
 
-      now: {
-        waveHeightFt: waveFt,
-        wavePeriodS: periodS,
-        windMph,
-        windDirDeg,
-        swellDirDeg: round1(pickNoaaNumber(now.swellDirection) ?? pickNoaaNumber(now.waveDirection)),
-        waterTempC: round1(pickNoaaNumber(now.waterTemperature)),
+  return fresh;
+});
 
-        // score
-        score10: scored.score10,
-        status: scored.status,
-        take: scored.take,
-      },
-
-      hourly,
-
-      bestWindow2h: window2h,
-    };
-
-    // 3) Save cache
-    cache.set(selected.id, data);
-
-    return ok(data, { cached: false });
+return ok(data, { cached: false, cacheLayer: "fresh" });
   } catch (e) {
     console.error("FORECAST ROUTE ERROR:", e);
     const msg = e instanceof Error ? e.stack ?? e.message : String(e);
