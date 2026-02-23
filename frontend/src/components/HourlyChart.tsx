@@ -1,22 +1,25 @@
 "use client";
 
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  type TooltipProps,
-} from "recharts";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from "recharts";
 
 type Point = { time: string; waveHeightFt: number | null; score: number | null };
 
-function SurfTooltip({ active, payload, label }: TooltipProps<number, string>) {
-  if (!active || !payload?.length) return null;
+type TooltipPayloadItem = {
+  dataKey?: string;
+  value?: number;
+};
 
-  const wave = payload.find((p) => p.dataKey === "waveHeightFt")?.value as number | undefined;
-  const score = payload.find((p) => p.dataKey === "score")?.value as number | undefined;
+type MinimalTooltipProps = {
+  active?: boolean;
+  label?: string;
+  payload?: ReadonlyArray<TooltipPayloadItem>;
+};
+
+function SurfTooltip({ active, payload, label }: MinimalTooltipProps) {
+  if (!active || !payload || payload.length === 0) return null;
+
+  const wave = payload.find((p) => p.dataKey === "waveHeightFt")?.value;
+  const score = payload.find((p) => p.dataKey === "score")?.value;
 
   return (
     <div className="glass soft-shadow rounded-2xl px-3 py-2 text-xs text-white">
@@ -63,7 +66,10 @@ export default function HourlyChart({ data }: { data: Point[] }) {
               tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 12 }}
               width={30}
             />
-            <Tooltip content={<SurfTooltip />} cursor={{ stroke: "rgba(255,255,255,0.12)" }} />
+            <Tooltip
+              content={(props) => <SurfTooltip {...(props as unknown as MinimalTooltipProps)} />}
+              cursor={{ stroke: "rgba(255,255,255,0.12)" }}
+            />
             <Line
               type="monotone"
               dataKey="waveHeightFt"
