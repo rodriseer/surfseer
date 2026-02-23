@@ -6,6 +6,7 @@ import HourlyChart from "@/components/HourlyChart";
 import { fetchToday, fetchTideNOAA } from "@/lib/surfData";
 import { bestWindow2h, degToCompass, scoreSurf10, windQuality } from "@/lib/surfScore";
 import { SPOTS, type SpotId } from "@/lib/spots";
+import CopyReportButton from "@/components/CopyReportButton";
 
 const NOAA_TIDE_STATION = "8570283";
 
@@ -45,6 +46,25 @@ function Metric({ label, value, sub }: { label: string; value: string; sub: stri
       <p className="mt-1 text-xs text-white/60">{sub}</p>
     </div>
   );
+}
+
+/* ---------- NEW: best-window helper (by score) ---------- */
+
+function best2hByScore(points: Array<{ time: string; score: number | null }>) {
+  let best: { start: string; end: string; avg: number } | null = null;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i]?.score;
+    const b = points[i + 1]?.score;
+    if (typeof a !== "number" || typeof b !== "number") continue;
+
+    const avg = (a + b) / 2;
+    if (!best || avg > best.avg) {
+      best = { start: points[i].time, end: points[i + 1].time, avg };
+    }
+  }
+
+  return best;
 }
 
 /* ---------- component ---------- */
@@ -110,6 +130,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
     period_s: number | null;
   }> = Array.isArray(today?.hourly) ? today.hourly : [];
 
+  // Existing wind-only window (kept as fallback)
   const window2hRaw = bestWindow2h({
     hourly: hourly.map((h) => ({
       time: h.time,
@@ -128,11 +149,39 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
       }
     : null;
 
-  const chartData = hourly.slice(0, 12).map((h) => ({
-    time: h.time,
-    waveHeightFt: h.wave_ft,
-    score: null,
-  }));
+  /* ---------- UPDATED: chartData now includes hourly surf score ---------- */
+
+  const chartData = hourly.slice(0, 12).map((h) => {
+    const hmph =
+      h.wind_mph != null && Number.isFinite(h.wind_mph) ? Math.round(h.wind_mph) : null;
+
+    const hdeg =
+      h.wind_dir_deg != null && Number.isFinite(h.wind_dir_deg) ? Math.round(h.wind_dir_deg) : null;
+
+    const hwave = h.wave_ft ?? waveFt ?? null;
+    const hperiod = h.period_s ?? periodS ?? null;
+
+    const hq = hdeg != null ? windQuality(hdeg, selected.beachFacingDeg) : null;
+
+    const hscored = scoreSurf10({
+      windMph: hmph,
+      waveFt: hwave,
+      periodS: hperiod,
+      windDirBonus: hq?.bonus ?? 0,
+    });
+
+    return {
+      time: h.time,
+      waveHeightFt: h.wave_ft,
+      score: typeof hscored.score10 === "number" ? hscored.score10 : null,
+    };
+  });
+
+  const bestScoreWindow = best2hByScore(chartData.map((p) => ({ time: p.time, score: p.score })));
+
+  const bestScoreWindowLabel = bestScoreWindow
+    ? `${formatHourLabel(bestScoreWindow.start)}–${formatHourLabel(bestScoreWindow.end)}`
+    : null;
 
   return (
     <div className="min-h-screen bg-transparent text-white">
@@ -230,17 +279,23 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
 
           <Divider />
 
+          {/* UPDATED: Best window now prioritizes best-surf-score window, falls back to wind window */}
           <div className="glass soft-shadow rounded-2xl p-5">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold">Best window</p>
               <span className="text-xs font-semibold text-white/70">
-                {window2h ? window2h.label : "—"}
+                {bestScoreWindowLabel ?? window2h?.label ?? "—"}
               </span>
             </div>
+
             <p className="mt-2 text-sm leading-6 text-white/70">
-              {window2h
-                ? `Lowest wind window today (prefers offshore/side-off when possible). Wind: ${window2h.windLabel}.`
-                : "Hourly wind is loading…"}
+              {bestScoreWindow
+                ? `Top 2-hour surf window today based on wave + period + wind. Avg score: ${bestScoreWindow.avg.toFixed(
+                    1
+                  )}/10.`
+                : window2h
+                  ? `Lowest wind window today (prefers offshore/side-off when possible). Wind: ${window2h.windLabel}.`
+                  : "Hourly forecast is loading…"}
             </p>
           </div>
 
@@ -250,6 +305,13 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
             <ShareButton />
+            <CopyReportButton
+              spotName={selected.name}
+              url={`https://surfcheckseer.com/spot/${selected.id}`}
+              score={surf.score}
+              status={surf.status}
+              bestWindowLabel={bestScoreWindowLabel ?? window2h?.label ?? null}
+            />
           </div>
 
           <div className="mt-7">

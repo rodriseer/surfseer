@@ -10,20 +10,31 @@ export async function GET(req: Request) {
     const token = String(searchParams.get("token") ?? "").trim();
 
     if (!token) {
-      return NextResponse.json({ ok: false, error: { message: "Missing token" } }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: { message: "Missing token" } },
+        { status: 400 }
+      );
     }
 
     const supabase = supabaseAdmin();
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("subscribers")
       .update({ is_active: false })
-      .eq("unsub_token", token);
+      .eq("unsub_token", token)
+      .select("id")
+      .maybeSingle();
 
     if (error) throw new Error(error.message);
 
-    // Simple redirect back to homepage
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+    if (!data) {
+      return NextResponse.json(
+        { ok: false, error: { message: "Invalid token" } },
+        { status: 404 }
+      );
+    }
+
+    const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
     return NextResponse.redirect(`${baseUrl}/?unsubscribed=1`);
   } catch (e) {
     console.error("UNSUBSCRIBE ERROR:", e);

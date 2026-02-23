@@ -131,7 +131,7 @@ export async function POST(req: Request) {
 
     const resend = new Resend(reqEnv("RESEND_API_KEY"));
     const from = reqEnv("FROM_EMAIL");
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+    const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 
     const supabase = supabaseAdmin();
 

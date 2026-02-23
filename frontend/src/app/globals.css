@@ -1,3 +1,4 @@
+/* app/globals.css */
 @import "tailwindcss";
 
 /* --- Base ocean background (applied via class bg-ocean in layout) --- */
@@ -57,4 +58,50 @@ html, body {
 /* Make form controls not look “raw browser” */
 select, input, button, textarea {
   font: inherit;
+}
+
+/* =========================================================
+   SurfSeer Effects: shimmer (same vibe, clearly moving)
+   ========================================================= */
+
+/* Add this as an overlay div: <div className="surf-shimmer" /> */
+.surf-shimmer {
+  position: fixed;
+  inset: -40%;
+  pointer-events: none;
+
+  opacity: 0.85;
+  mix-blend-mode: overlay;
+
+  background:
+    radial-gradient(1600px 1000px at 30% 35%, rgba(0, 90, 140, 0.95), transparent 65%),
+    radial-gradient(1400px 900px at 70% 60%, rgba(0, 130, 170, 0.85), transparent 70%),
+    radial-gradient(1200px 800px at 50% 80%, rgba(0, 60, 110, 0.8), transparent 75%),
+    radial-gradient(900px 600px at 20% 70%, rgba(0, 180, 200, 0.5), transparent 70%);
+
+  /* keeps your look but makes motion easier to perceive */
+  filter: contrast(112%) saturate(118%);
+  will-change: transform;
+  transform: translateZ(0);
+
+  /* changed to continuous drift (more noticeable than ease+alternate) */
+  animation: oceanDrift 10s linear infinite;
+}
+
+@keyframes oceanDrift {
+  0% {
+    transform: translate3d(-15%, -8%, 0) scale(1.05) rotate(-1deg);
+  }
+  50% {
+    transform: translate3d(10%, 6%, 0) scale(1.1) rotate(1deg);
+  }
+  100% {
+    transform: translate3d(-10%, -5%, 0) scale(1.07) rotate(-0.5deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .surf-shimmer {
+    animation: none;
+  }
 }
