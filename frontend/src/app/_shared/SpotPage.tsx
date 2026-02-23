@@ -2,6 +2,7 @@ import Image from "next/image";
 import SpotPicker from "@/components/SpotPicker";
 import ShareButton from "@/components/ShareButton";
 import SubscribeBox from "@/components/SubscribeBox";
+import HourlyChart from "@/components/HourlyChart";
 import { fetchToday, fetchTideNOAA } from "@/lib/surfData";
 import { bestWindow2h, degToCompass, scoreSurf10, windQuality } from "@/lib/surfScore";
 
@@ -40,15 +41,15 @@ function tideTypeLabel(t: string) {
 }
 
 function Divider() {
-  return <div className="my-5 h-px w-full bg-zinc-200/70" />;
+  return <div className="my-7 h-px w-full bg-white/10" />;
 }
 
 function Metric({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4">
-      <p className="text-xs font-semibold text-zinc-500">{label}</p>
-      <p className="mt-1 text-lg font-extrabold">{value}</p>
-      <p className="mt-1 text-xs text-zinc-500">{sub}</p>
+    <div className="glass soft-shadow uplift rounded-2xl p-4">
+      <p className="text-xs font-semibold text-white/70">{label}</p>
+      <p className="mt-1 text-lg font-extrabold text-white">{value}</p>
+      <p className="mt-1 text-xs text-white/60">{sub}</p>
     </div>
   );
 }
@@ -96,14 +97,14 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
 
   const pill =
     scored.score10 == null
-      ? "bg-zinc-100 text-zinc-700"
+      ? "bg-white/10 text-white/80 border border-white/10"
       : scored.score10 >= 8
-        ? "bg-emerald-50 text-emerald-700"
+        ? "bg-emerald-500/15 text-emerald-100 border border-emerald-400/20"
         : scored.score10 >= 6
-          ? "bg-sky-50 text-sky-700"
+          ? "bg-sky-500/15 text-sky-100 border border-sky-400/20"
           : scored.score10 >= 4
-            ? "bg-amber-50 text-amber-700"
-            : "bg-rose-50 text-rose-700";
+            ? "bg-amber-500/15 text-amber-100 border border-amber-400/20"
+            : "bg-rose-500/15 text-rose-100 border border-rose-400/20";
 
   const surf = { score: scored.score10, status: scored.status, pill, take: scored.take };
 
@@ -133,9 +134,16 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
       }
     : null;
 
+  // chart points
+  const chartData = hourly.slice(0, 12).map((h) => ({
+    time: h.time,
+    waveHeightFt: h.wave_ft,
+    score: null,
+  }));
+
   return (
-    <div className="min-h-screen bg-white text-zinc-900">
-      <header className="sticky top-0 z-50 border-b border-zinc-200/60 bg-white/80 backdrop-blur">
+    <div className="min-h-screen bg-transparent text-white">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/20 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <Image
@@ -147,8 +155,10 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               className="rounded-lg"
             />
             <div className="leading-tight">
-              <p className="text-sm font-extrabold tracking-tight">SurfSeer</p>
-              <p className="text-xs text-zinc-500">{selected.name}</p>
+              <p className="text-base font-extrabold tracking-wide bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
+                SurfSeer
+              </p>
+              <p className="text-xs text-white/60">{selected.name}</p>
             </div>
           </div>
 
@@ -158,40 +168,45 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
 
           <a
             href="#today"
-            className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
+            className="uplift rounded-2xl bg-white/10 px-4 py-2 text-sm font-semibold text-white glass hover:bg-white/14"
           >
             Check now
           </a>
         </div>
 
-        <div className="border-t border-zinc-200/60 bg-white/80 px-6 py-3 backdrop-blur md:hidden">
+        <div className="border-t border-white/10 bg-black/20 px-6 py-3 backdrop-blur md:hidden">
           <SpotPicker />
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-6 pb-20 pt-10">
-        <section
-          id="today"
-          className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)]"
-        >
+        <section id="today" className="glass soft-shadow rounded-3xl p-8 sm:p-10 fade-in">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold text-zinc-500">Selected spot</p>
+              <p className="text-xs font-semibold text-white/70">Selected spot</p>
+
               <div className="mt-1 flex items-center gap-2">
-                <p className="text-xl font-extrabold">{selected.name}</p>
-                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${surf.pill}`}>
+                <p className="text-2xl font-extrabold">{selected.name}</p>
+                <span className={`uplift rounded-full px-2.5 py-1 text-xs font-bold ${surf.pill}`}>
                   {surf.status}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-zinc-500">Updated: {updated}</p>
+
+              <div className="mt-2 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <p className="text-sm text-white/60">Updated: {updated}</p>
+              </div>
             </div>
 
             <div className="text-right">
-              <p className="text-xs font-semibold text-zinc-500">Surf score</p>
-              <p className="mt-1 text-3xl font-extrabold tracking-tight">
-                {surf.score != null ? surf.score.toFixed(1) : "—"}
-              </p>
-              <p className="text-xs text-zinc-500">out of 10</p>
+              <p className="text-xs font-semibold text-white/70">Surf score</p>
+              <div className="relative inline-block">
+                <div className="absolute inset-0 -z-10 blur-2xl opacity-25 bg-white/20 rounded-full" />
+                <p className="mt-1 text-4xl sm:text-5xl font-extrabold tracking-tight">
+                  {surf.score != null ? surf.score.toFixed(1) : "—"}
+                </p>
+              </div>
+              <p className="text-xs text-white/60">out of 10</p>
             </div>
           </div>
 
@@ -222,30 +237,34 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
 
           <Divider />
 
-          <div className="rounded-xl border border-zinc-200 bg-white p-4">
+          <div className="glass soft-shadow rounded-2xl p-5">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold">Best window</p>
-              <span className="text-xs font-semibold text-zinc-500">
+              <span className="text-xs font-semibold text-white/70">
                 {window2h ? window2h.label : "—"}
               </span>
             </div>
-            <p className="mt-2 text-sm leading-6 text-zinc-600">
+            <p className="mt-2 text-sm leading-6 text-white/70">
               {window2h
                 ? `Lowest wind window today (prefers offshore/side-off when possible). Wind: ${window2h.windLabel}.`
                 : "Hourly wind is loading…"}
             </p>
           </div>
 
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <ShareButton className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold hover:bg-zinc-50" />
+          <div className="mt-6">
+            <HourlyChart data={chartData} />
           </div>
 
-          <div className="mt-6">
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+            <ShareButton />
+          </div>
+
+          <div className="mt-7">
             <SubscribeBox spotId={selected.id} />
           </div>
         </section>
 
-        <footer className="mt-20 border-t border-zinc-200 pt-8 text-sm text-zinc-500">
+        <footer className="mt-16 border-t border-white/10 pt-8 text-sm text-white/60">
           © {new Date().getFullYear()} SurfSeer
         </footer>
       </main>

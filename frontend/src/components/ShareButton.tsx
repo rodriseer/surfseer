@@ -1,14 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export default function ShareButton({ className = "" }: { className?: string }) {
   const [copied, setCopied] = useState(false);
 
+  const base =
+    "uplift rounded-2xl bg-white/10 px-4 py-3 text-sm font-bold text-white glass hover:bg-white/14";
+
+  const classes = useMemo(() => {
+    return className.trim().length ? className : base;
+  }, [className]);
+
   async function copyOrShare() {
     const url = window.location.href;
 
-    // 1) Prefer native share sheet on supported devices (mobile)
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
         await (navigator as any).share({
@@ -18,11 +24,10 @@ export default function ShareButton({ className = "" }: { className?: string }) 
         });
         return;
       } catch {
-        // user cancelled or share failed -> continue to copy fallback
+        // fall through
       }
     }
 
-    // 2) Clipboard API (best on HTTPS + supported browsers)
     try {
       if (window.isSecureContext && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
@@ -31,10 +36,9 @@ export default function ShareButton({ className = "" }: { className?: string }) 
         return;
       }
     } catch {
-      // continue to legacy fallback
+      // fall through
     }
 
-    // 3) Legacy fallback (works in more places, incl. some iOS cases)
     try {
       const ta = document.createElement("textarea");
       ta.value = url;
@@ -49,7 +53,7 @@ export default function ShareButton({ className = "" }: { className?: string }) 
 
       ta.focus();
       ta.select();
-      ta.setSelectionRange(0, ta.value.length); // important for iOS
+      ta.setSelectionRange(0, ta.value.length);
 
       const ok = document.execCommand("copy");
       document.body.removeChild(ta);
@@ -60,15 +64,14 @@ export default function ShareButton({ className = "" }: { className?: string }) 
         return;
       }
     } catch {
-      // continue to last resort
+      // fall through
     }
 
-    // 4) Last resort: show a prompt so the user can manually copy
     window.prompt("Copy this link:", url);
   }
 
   return (
-    <button onClick={copyOrShare} className={className} type="button">
+    <button onClick={copyOrShare} className={classes} type="button">
       {copied ? "Copied ✅" : "Share report"}
     </button>
   );

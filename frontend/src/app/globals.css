@@ -1,26 +1,87 @@
 @import "tailwindcss";
 
+/* Base tokens (always dark for now) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #070a12;        /* deep navy */
+  --foreground: #e8eefc;        /* soft near-white */
+  --card: rgba(255, 255, 255, 0.08);
+  --card-border: rgba(255, 255, 255, 0.12);
+  --muted: rgba(232, 238, 252, 0.75);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ===== SurfSeer Background System ===== */
+
+.surfseer-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -20;
+  background:
+    radial-gradient(1200px 700px at 15% 10%, rgba(56, 189, 248, 0.22), transparent 55%),
+    radial-gradient(900px 600px at 80% 25%, rgba(34, 211, 238, 0.16), transparent 55%),
+    radial-gradient(1100px 800px at 50% 90%, rgba(59, 130, 246, 0.18), transparent 60%),
+    linear-gradient(180deg, #050812 0%, #070a12 40%, #060814 100%);
+  animation: surfseer-drift 14s ease-in-out infinite alternate;
+  will-change: transform, filter;
+}
+
+@keyframes surfseer-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); filter: saturate(1.02); }
+  to   { transform: translate3d(0, -10px, 0) scale(1.02); filter: saturate(1.08); }
+}
+
+/* Soft noise overlay (texture) */
+.surfseer-noise {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  opacity: 0.10;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+}
+
+/* ===== Reusable UI helpers (no extra libs) ===== */
+
+.glass {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.soft-shadow {
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.03) inset;
+}
+
+.uplift {
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease, opacity 160ms ease;
+}
+.uplift:hover {
+  transform: translateY(-2px);
+}
+.uplift:active {
+  transform: translateY(0px);
+}
+
+/* subtle entrance animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .surfseer-bg { animation: none; }
+  .uplift { transition: none; }
+  .fade-in { animation: none; }
 }

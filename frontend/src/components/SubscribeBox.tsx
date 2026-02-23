@@ -40,10 +40,17 @@ export default function SubscribeBox({ spotId }: { spotId: string }) {
     }
   }
 
+  const statusStyles =
+    status === "ok"
+      ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+      : status === "err"
+        ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
+        : "border-white/10 bg-white/5 text-white/70";
+
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5">
-      <p className="text-sm font-extrabold">Get the daily surf report</p>
-      <p className="mt-1 text-sm text-zinc-600">
+    <div className="glass soft-shadow rounded-3xl p-5">
+      <p className="text-sm font-extrabold text-white">Get the daily surf report</p>
+      <p className="mt-1 text-sm text-white/70">
         Ocean City + Assateague. One email per day. No spam.
       </p>
 
@@ -55,34 +62,23 @@ export default function SubscribeBox({ spotId }: { spotId: string }) {
           inputMode="email"
           autoComplete="email"
           placeholder="you@email.com"
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400"
+          className="uplift w-full rounded-2xl border border-white/12 bg-black/20 px-4 py-3 text-sm text-white placeholder:text-white/45 outline-none focus:border-white/25 focus:ring-2 focus:ring-white/10"
           required
         />
         <button
           type="submit"
           disabled={status === "loading"}
-          className="rounded-xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-60"
+          className="uplift rounded-2xl bg-white/10 px-4 py-3 text-sm font-bold text-white glass hover:bg-white/14 disabled:opacity-60"
         >
           {status === "loading" ? "Joining…" : "Join"}
         </button>
       </form>
 
       {status !== "idle" && (
-        <div
-          className={
-            "mt-3 rounded-xl border p-3 text-sm " +
-            (status === "ok"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : status === "err"
-                ? "border-rose-200 bg-rose-50 text-rose-800"
-                : "border-zinc-200 bg-zinc-50 text-zinc-700")
-          }
-        >
-          {msg}
-        </div>
+        <div className={`mt-3 rounded-2xl border p-3 text-sm ${statusStyles}`}>{msg}</div>
       )}
 
-      <p className="mt-3 text-xs text-zinc-500">
+      <p className="mt-3 text-xs text-white/55">
         By joining, you agree to receive SurfSeer emails. Unsubscribe anytime.
       </p>
     </div>

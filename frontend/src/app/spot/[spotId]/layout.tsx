@@ -33,5 +33,5 @@ export async function generateMetadata({
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <div className="min-h-screen bg-transparent text-white">{children}</div>;
 }

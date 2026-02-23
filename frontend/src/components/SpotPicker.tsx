@@ -25,16 +25,16 @@ export default function SpotPicker() {
 
   function setSpot(id: SpotId) {
     router.push(`/spot/${id}`);
-    router.refresh(); // ✅ forces server component to refetch
+    router.refresh();
   }
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs font-semibold text-zinc-500">Spot</span>
+      <span className="text-xs font-semibold text-white/70">Spot</span>
       <select
         value={current}
         onChange={(e) => setSpot(e.target.value as SpotId)}
-        className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 outline-none hover:bg-zinc-50"
+        className="uplift rounded-2xl border border-white/12 bg-black/20 px-3 py-2 text-sm font-semibold text-white outline-none focus:border-white/25 focus:ring-2 focus:ring-white/10"
       >
         {SPOTS.map((s) => (
           <option key={s.id} value={s.id}>
