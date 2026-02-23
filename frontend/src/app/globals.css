@@ -1,87 +1,60 @@
 @import "tailwindcss";
 
-/* Base tokens (always dark for now) */
-:root {
-  --background: #070a12;        /* deep navy */
-  --foreground: #e8eefc;        /* soft near-white */
-  --card: rgba(255, 255, 255, 0.08);
-  --card-border: rgba(255, 255, 255, 0.12);
-  --muted: rgba(232, 238, 252, 0.75);
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-/* ===== SurfSeer Background System ===== */
-
-.surfseer-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -20;
+/* --- Base ocean background (applied via class bg-ocean in layout) --- */
+.bg-ocean {
   background:
-    radial-gradient(1200px 700px at 15% 10%, rgba(56, 189, 248, 0.22), transparent 55%),
-    radial-gradient(900px 600px at 80% 25%, rgba(34, 211, 238, 0.16), transparent 55%),
-    radial-gradient(1100px 800px at 50% 90%, rgba(59, 130, 246, 0.18), transparent 60%),
-    linear-gradient(180deg, #050812 0%, #070a12 40%, #060814 100%);
-  animation: surfseer-drift 14s ease-in-out infinite alternate;
-  will-change: transform, filter;
+    radial-gradient(900px 600px at 20% 20%, rgba(56, 189, 248, 0.12), transparent 55%),
+    radial-gradient(900px 600px at 80% 70%, rgba(45, 212, 191, 0.10), transparent 55%),
+    radial-gradient(700px 500px at 50% 110%, rgba(251, 191, 36, 0.06), transparent 60%),
+    linear-gradient(135deg, #04121c 0%, #0a1f2e 45%, #06293d 100%);
 }
 
-@keyframes surfseer-drift {
-  from { transform: translate3d(0, 0, 0) scale(1); filter: saturate(1.02); }
-  to   { transform: translate3d(0, -10px, 0) scale(1.02); filter: saturate(1.08); }
+/* Optional: smoother font rendering */
+html, body {
+  text-rendering: optimizeLegibility;
 }
 
-/* Soft noise overlay (texture) */
-.surfseer-noise {
-  position: fixed;
-  inset: 0;
-  z-index: -10;
-  pointer-events: none;
-  opacity: 0.10;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
-}
-
-/* ===== Reusable UI helpers (no extra libs) ===== */
-
+/* --- Apple-ish, but ocean-tinted glass --- */
 .glass {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(10, 60, 90, 0.35);
+  border: 1px solid rgba(120, 200, 255, 0.16);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 }
 
 .soft-shadow {
   box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.35),
-    0 1px 0 rgba(255, 255, 255, 0.03) inset;
+    0 20px 60px rgba(0, 0, 0, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
 }
 
 .uplift {
-  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease, opacity 160ms ease;
-}
-.uplift:hover {
-  transform: translateY(-2px);
-}
-.uplift:active {
-  transform: translateY(0px);
+  transform: translateZ(0);
 }
 
-/* subtle entrance animation */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 .fade-in {
-  animation: fadeIn 0.5s ease-out;
+  animation: fade-in 420ms ease-out both;
 }
 
-/* Respect reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .surfseer-bg { animation: none; }
-  .uplift { transition: none; }
-  .fade-in { animation: none; }
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0px); }
+}
+
+/* --- Surf accent helpers (optional utility-ish classes) --- */
+.surf-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+}
+
+.surf-link {
+  color: rgba(56, 189, 248, 0.95);
+}
+.surf-link:hover {
+  color: rgba(125, 211, 252, 1);
+}
+
+/* Make form controls not look “raw browser” */
+select, input, button, textarea {
+  font: inherit;
 }

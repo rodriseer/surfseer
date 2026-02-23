@@ -1,22 +1,15 @@
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+import SpotPage from "@/app/_shared/SpotPage";
+import { SPOTS, type SpotId } from "@/lib/spots";
+import { notFound } from "next/navigation";
 
-import SpotPage, { type SpotId } from "@/app/_shared/SpotPage";
-
-const VALID: SpotId[] = ["oc-inlet", "oc-north", "assateague"];
-
-export default async function Page({
+export default async function SpotPageRoute({
   params,
 }: {
-  // Next 16: params can be a Promise
-  params: Promise<Record<string, string>>;
+  params: { spotId: string } | Promise<{ spotId: string }>;
 }) {
   const p = await params;
+  const id = decodeURIComponent(p?.spotId || "").toLowerCase().trim();
 
-  // If your folder is [spotId], this will exist:
-  const raw = p.spotId ?? p.id ?? Object.values(p)[0] ?? "oc-inlet";
-
-  const spotId = (VALID.includes(raw as SpotId) ? (raw as SpotId) : "oc-inlet") satisfies SpotId;
-
-  return <SpotPage key={spotId} spotId={spotId} />;
+  if (!(id in SPOTS)) notFound();
+  return <SpotPage spotId={id as SpotId} />;
 }

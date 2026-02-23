@@ -6,7 +6,7 @@ export default function ShareButton({ className = "" }: { className?: string }) 
   const [copied, setCopied] = useState(false);
 
   const base =
-    "uplift rounded-2xl bg-white/10 px-4 py-3 text-sm font-bold text-white glass hover:bg-white/14";
+    "uplift rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm font-semibold text-white glass hover:bg-white/10";
 
   const classes = useMemo(() => {
     return className.trim().length ? className : base;
@@ -42,7 +42,6 @@ export default function ShareButton({ className = "" }: { className?: string }) 
     try {
       const ta = document.createElement("textarea");
       ta.value = url;
-
       ta.setAttribute("readonly", "");
       ta.style.position = "fixed";
       ta.style.top = "0";
@@ -50,7 +49,6 @@ export default function ShareButton({ className = "" }: { className?: string }) 
       ta.style.opacity = "0";
 
       document.body.appendChild(ta);
-
       ta.focus();
       ta.select();
       ta.setSelectionRange(0, ta.value.length);
@@ -72,7 +70,7 @@ export default function ShareButton({ className = "" }: { className?: string }) 
 
   return (
     <button onClick={copyOrShare} className={classes} type="button">
-      {copied ? "Copied ✅" : "Share report"}
+      {copied ? "Copied" : "Share"}
     </button>
   );
 }

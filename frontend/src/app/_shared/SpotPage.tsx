@@ -5,14 +5,7 @@ import SubscribeBox from "@/components/SubscribeBox";
 import HourlyChart from "@/components/HourlyChart";
 import { fetchToday, fetchTideNOAA } from "@/lib/surfData";
 import { bestWindow2h, degToCompass, scoreSurf10, windQuality } from "@/lib/surfScore";
-
-export const SPOTS = [
-  { id: "oc-inlet", name: "Ocean City (Inlet)", lat: 38.3287, lon: -75.0913, beachFacingDeg: 90 },
-  { id: "oc-north", name: "Ocean City (Northside)", lat: 38.4066, lon: -75.057, beachFacingDeg: 85 },
-  { id: "assateague", name: "Assateague", lat: 38.0534, lon: -75.2443, beachFacingDeg: 110 },
-] as const;
-
-export type SpotId = (typeof SPOTS)[number]["id"];
+import { SPOTS, type SpotId } from "@/lib/spots";
 
 const NOAA_TIDE_STATION = "8570283";
 
@@ -57,7 +50,8 @@ function Metric({ label, value, sub }: { label: string; value: string; sub: stri
 /* ---------- component ---------- */
 
 export default async function SpotPage({ spotId }: { spotId: SpotId }) {
-  const selected = SPOTS.find((s) => s.id === spotId) ?? SPOTS[0];
+  const fallbackKey = Object.keys(SPOTS)[0] as SpotId;
+  const selected = SPOTS[spotId] ?? SPOTS[fallbackKey];
 
   const [today, tide] = await Promise.all([
     fetchToday(selected.lat, selected.lon),
@@ -134,7 +128,6 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
       }
     : null;
 
-  // chart points
   const chartData = hourly.slice(0, 12).map((h) => ({
     time: h.time,
     waveHeightFt: h.wave_ft,
@@ -143,7 +136,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
 
   return (
     <div className="min-h-screen bg-transparent text-white">
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/20 backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/25 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <Image
@@ -155,7 +148,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               className="rounded-lg"
             />
             <div className="leading-tight">
-              <p className="text-base font-extrabold tracking-wide bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
+              <p className="text-base font-extrabold tracking-wide bg-gradient-to-r from-cyan-200 to-white/70 bg-clip-text text-transparent">
                 SurfSeer
               </p>
               <p className="text-xs text-white/60">{selected.name}</p>
@@ -168,7 +161,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
 
           <a
             href="#today"
-            className="uplift rounded-2xl bg-white/10 px-4 py-2 text-sm font-semibold text-white glass hover:bg-white/14"
+            className="uplift rounded-2xl border border-cyan-300/20 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 glass hover:bg-cyan-500/15 transition"
           >
             Check now
           </a>
@@ -193,7 +186,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               </div>
 
               <div className="mt-2 flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-cyan-300 animate-pulse" />
                 <p className="text-sm text-white/60">Updated: {updated}</p>
               </div>
             </div>
@@ -201,8 +194,8 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
             <div className="text-right">
               <p className="text-xs font-semibold text-white/70">Surf score</p>
               <div className="relative inline-block">
-                <div className="absolute inset-0 -z-10 blur-2xl opacity-25 bg-white/20 rounded-full" />
-                <p className="mt-1 text-4xl sm:text-5xl font-extrabold tracking-tight">
+                <div className="absolute inset-0 -z-10 blur-2xl opacity-35 bg-cyan-400/25 rounded-full" />
+                <p className="mt-1 text-4xl sm:text-5xl font-extrabold tracking-tight text-cyan-100">
                   {surf.score != null ? surf.score.toFixed(1) : "—"}
                 </p>
               </div>

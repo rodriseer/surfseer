@@ -1,4 +1,7 @@
-export type SpotKey = "assateague";
+import type { SpotId } from "@/lib/spots";
+
+// Keep this synced automatically with SPOTS keys
+export type SpotKey = SpotId;
 
 export type SurfHour = {
   timeISO: string;
@@ -23,7 +26,7 @@ export type SurfNow = {
   windMph: number | null;
   windDirDeg: number | null;
 
-  tideFt: number | null; // we’ll populate next patch
+  tideFt: number | null;
   waterTempF: number | null;
 
   score10: number | null;
@@ -38,7 +41,7 @@ export type SurfReport = {
   };
   updatedAtISO: string;
   now: SurfNow;
-  hours: SurfHour[]; // usually next 24
+  hours: SurfHour[];
 };
 
 export type ApiOk<T> = { ok: true; data: T };

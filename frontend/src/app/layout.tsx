@@ -1,37 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
-  title: "SurfSeer | Ocean City Surf Report",
-  description: "Real-time surf conditions for Ocean City and Assateague.",
+  title: "SurfSeer",
+  description: "Ocean City + Assateague surf conditions & forecast.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {/* Background layers */}
-        <div className="surfseer-bg" />
-        <div className="surfseer-noise" />
+      <body className="min-h-screen text-white bg-ocean">
+        {/* subtle ocean glow */}
+        <div className="pointer-events-none fixed inset-0 -z-10">
+          <div className="absolute -top-40 left-1/2 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl" />
+          <div className="absolute top-[30%] left-[-120px] h-[520px] w-[520px] rounded-full bg-sky-500/10 blur-3xl" />
+          <div className="absolute -bottom-52 right-[-120px] h-[640px] w-[640px] rounded-full bg-teal-400/10 blur-3xl" />
+        </div>
 
         {children}
-        <Analytics />
       </body>
     </html>
   );

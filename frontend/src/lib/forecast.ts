@@ -78,10 +78,13 @@ export async function getSurfReport(spotKey: SpotKey): Promise<SurfReport> {
   const apiKey = process.env.STORMGLASS_API_KEY;
   if (!apiKey) throw new Error("Missing STORMGLASS_API_KEY");
 
+  // Stormglass expects lat + lng in the query string.
+  // Our SPOTS uses lat + lon, so we map lon -> lng here.
   const params = new URLSearchParams({
     lat: String(spot.lat),
-    lng: String(spot.lng),
-    params: "waveHeight,wavePeriod,waveDirection,windSpeed,windDirection,waterTemperature",
+    lng: String(spot.lon),
+    params:
+      "waveHeight,wavePeriod,waveDirection,windSpeed,windDirection,waterTemperature",
     source: "noaa",
   });
 
@@ -107,9 +110,7 @@ export async function getSurfReport(spotKey: SpotKey): Promise<SurfReport> {
     const wavePeriodS = h.wavePeriod?.noaa ?? null;
     const waveDirDeg = h.waveDirection?.noaa ?? null;
 
-    const windMph =
-      h.windSpeed?.noaa != null ? mpsToMph(h.windSpeed.noaa) : null;
-
+    const windMph = h.windSpeed?.noaa != null ? mpsToMph(h.windSpeed.noaa) : null;
     const windDirDeg = h.windDirection?.noaa ?? null;
 
     const waterTempF =
@@ -136,7 +137,8 @@ export async function getSurfReport(spotKey: SpotKey): Promise<SurfReport> {
   const now = hours[0] ?? null;
 
   return {
-    spot: { key: spotKey, name: spot.name, lat: spot.lat, lng: spot.lng },
+    // Your SurfReport type wants { lat, lng }. We provide lng from lon.
+    spot: { key: spotKey, name: spot.name, lat: spot.lat, lng: spot.lon },
     updatedAtISO: new Date().toISOString(),
     now: {
       waveHeightFt: now?.waveHeightFt ?? null,
