@@ -1,43 +1,44 @@
+// app/spot/[spotId]/opengraph-image.tsx
 import { ImageResponse } from "next/og";
 import { SPOTS } from "@/lib/spots";
 
 export const runtime = "edge";
-export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
 
-export default async function OGImage({
-  params,
-}: {
-  params: { spotId: string } | Promise<{ spotId: string }>;
-}) {
-  const p = await params;
-  const id = decodeURIComponent(p?.spotId || "").toLowerCase().trim();
+export async function GET(
+  req: Request,
+  { params }: { params: { spotId: string } }
+) {
+  const id = decodeURIComponent(params.spotId || "").toLowerCase().trim();
+  const spot = (SPOTS as any)[id];
 
-  const spot = (id in SPOTS) ? SPOTS[id as keyof typeof SPOTS] : null;
-  const spotName = spot?.name ?? "Surf Spot";
+  const title = spot?.name ?? "SurfSeer";
+  const url = new URL(req.url);
+  const host = `${url.protocol}//${url.host}`;
 
   return new ImageResponse(
     (
       <div
         style={{
-          width: "100%",
-          height: "100%",
+          width: "1200px",
+          height: "630px",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          padding: 80,
-          background: "#ffffff",
+          padding: "64px",
+          background: "linear-gradient(135deg, #04121c 0%, #0a1f2e 45%, #06293d 100%)",
+          color: "white",
         }}
       >
-        <div style={{ fontSize: 64, fontWeight: 800 }}>SurfSeer</div>
-        <div style={{ marginTop: 18, fontSize: 46, fontWeight: 750 }}>
-          {spotName}
+        <div style={{ fontSize: 28, opacity: 0.85, marginBottom: 12 }}>SurfSeer</div>
+        <div style={{ fontSize: 64, fontWeight: 800, lineHeight: 1.05 }}>{title}</div>
+        <div style={{ fontSize: 28, opacity: 0.8, marginTop: 18 }}>
+          Daily surf conditions • Best window • Tide + wind
         </div>
-        <div style={{ marginTop: 18, fontSize: 28, opacity: 0.72 }}>
-          Forecast • Swell • Wind • Tide
+        <div style={{ fontSize: 22, opacity: 0.7, marginTop: 26 }}>
+          {host}/spot/{id}
         </div>
       </div>
     ),
-    size
+    { width: 1200, height: 630 }
   );
 }

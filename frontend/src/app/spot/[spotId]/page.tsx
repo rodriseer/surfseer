@@ -1,3 +1,4 @@
+// app/spot/[spotId]/page.tsx
 import SpotPage from "@/app/_shared/SpotPage";
 import { SPOTS, type SpotId } from "@/lib/spots";
 import { notFound } from "next/navigation";

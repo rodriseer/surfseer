@@ -1,5 +1,7 @@
 // frontend/src/lib/surfData.ts
 
+import { scoreSurf10, windQuality } from "@/lib/surfScore";
+
 export type TodayData = {
   updated: string;
 
@@ -28,6 +30,21 @@ export type TodayData = {
 export type TideData = {
   station: string;
   tides: Array<{ type: string; time: string; height?: string }>;
+};
+
+export type OutlookDay = {
+  date: string; // YYYY-MM-DD
+  score_best: number | null;
+  best_window_label: string | null;
+
+  wave_ft: number | null;
+  period_s: number | null;
+  wind_mph: number | null;
+  wind_dir_deg: number | null;
+
+  wind_max_mph: number | null;
+  temp_max_f: number | null;
+  temp_min_f: number | null;
 };
 
 /* ----------------- helpers ----------------- */
@@ -120,7 +137,43 @@ async function fetchStormglassPoint(lat: number, lon: number) {
   } catch {}
 
   if (!res.ok) {
-    const msg = json?.errors?.[0]?.message ?? json?.message ?? `Stormglass request failed (${res.status})`;
+    const msg =
+      json?.errors?.[0]?.message ?? json?.message ?? `Stormglass request failed (${res.status})`;
+    throw new Error(msg);
+  }
+
+  const hours: StormglassHour[] = Array.isArray(json?.hours) ? json.hours : [];
+  if (!hours.length) throw new Error("Stormglass returned no hourly data.");
+  return hours;
+}
+
+// Cached version for outlook (server cache 30 minutes)
+async function fetchStormglassPointCached(lat: number, lon: number) {
+  const key = process.env.STORMGLASS_API_KEY;
+  if (!key) throw new Error("Missing STORMGLASS_API_KEY");
+
+  const params = new URLSearchParams({
+    lat: String(lat),
+    lng: String(lon),
+    source: "noaa",
+    params: ["windSpeed", "windDirection", "waveHeight", "wavePeriod", "swellHeight", "swellPeriod"].join(","),
+  });
+
+  const url = `https://api.stormglass.io/v2/weather/point?${params.toString()}`;
+
+  const res = await fetch(url, {
+    headers: { Authorization: key },
+    next: { revalidate: 1800 }, // 30 minutes
+  });
+
+  let json: any = null;
+  try {
+    json = await res.json();
+  } catch {}
+
+  if (!res.ok) {
+    const msg =
+      json?.errors?.[0]?.message ?? json?.message ?? `Stormglass request failed (${res.status})`;
     throw new Error(msg);
   }
 
@@ -171,6 +224,45 @@ async function fetchTemps3Day(lat: number, lon: number) {
   }));
 }
 
+async function fetchTemps5Day(lat: number, lon: number) {
+  const url = new URL("https://api.open-meteo.com/v1/forecast");
+  url.searchParams.set("latitude", String(lat));
+  url.searchParams.set("longitude", String(lon));
+  url.searchParams.set("timezone", "auto");
+  url.searchParams.set("daily", "temperature_2m_max,temperature_2m_min");
+  url.searchParams.set("forecast_days", "5");
+
+  const res = await fetch(url.toString(), { cache: "no-store" });
+  if (!res.ok) return [];
+
+  const j = await res.json();
+
+  const dTimes: string[] = j?.daily?.time ?? [];
+  const tMaxC: any[] = j?.daily?.temperature_2m_max ?? [];
+  const tMinC: any[] = j?.daily?.temperature_2m_min ?? [];
+
+  return dTimes.map((d, i) => ({
+    date: d,
+    temp_max_f: cToF(num(tMaxC[i])),
+    temp_min_f: cToF(num(tMinC[i])),
+  }));
+}
+
+/* ----------------- NY time labels for outlook window ----------------- */
+
+const NY_TZ = "America/New_York";
+
+function hourLabelNY(isoTime: string) {
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: NY_TZ,
+      hour: "numeric",
+    }).format(new Date(isoTime));
+  } catch {
+    return "—";
+  }
+}
+
 /* ----------------- public API ----------------- */
 
 export async function fetchToday(lat: number, lon: number): Promise<TodayData> {
@@ -202,7 +294,13 @@ export async function fetchToday(lat: number, lon: number): Promise<TodayData> {
   const hourly = hours.slice(idx, idx + 48).map((h) => {
     const w = windFromHour(h);
     const ww = waveFromHour(h);
-    return { time: h.time, wind_mph: w.wind_mph, wind_dir_deg: w.wind_dir_deg, wave_ft: ww.wave_ft, period_s: ww.period_s };
+    return {
+      time: h.time,
+      wind_mph: w.wind_mph,
+      wind_dir_deg: w.wind_dir_deg,
+      wave_ft: ww.wave_ft,
+      period_s: ww.period_s,
+    };
   });
 
   const windMaxByDate = new Map<string, number>();
@@ -235,6 +333,105 @@ export async function fetchToday(lat: number, lon: number): Promise<TodayData> {
 
   stormCache.set(cacheKey, { ts: Date.now(), data });
   return data;
+}
+
+export async function fetchOutlook5d(
+  lat: number,
+  lon: number,
+  beachFacingDeg: number
+): Promise<OutlookDay[]> {
+  let hours: StormglassHour[] = [];
+  try {
+    hours = await fetchStormglassPointCached(lat, lon);
+  } catch {
+    return [];
+  }
+
+  const byDate = new Map<string, StormglassHour[]>();
+  for (const h of hours) {
+    const dk = dateKey(h.time);
+    if (!byDate.has(dk)) byDate.set(dk, []);
+    byDate.get(dk)!.push(h);
+  }
+
+  const dates = Array.from(byDate.keys()).sort().slice(0, 5);
+
+  const temps = await fetchTemps5Day(lat, lon);
+  const tempsByDate = new Map(temps.map((t) => [t.date, t]));
+
+  const out: OutlookDay[] = [];
+
+  for (const d of dates) {
+    const dayHours = (byDate.get(d) ?? [])
+      .slice()
+      .sort((a, b) => Date.parse(a.time) - Date.parse(b.time));
+
+    const points = dayHours.map((h) => {
+      const w = windFromHour(h);
+      const ww = waveFromHour(h);
+
+      const bonus =
+        w.wind_dir_deg != null ? windQuality(w.wind_dir_deg, beachFacingDeg)?.bonus ?? 0 : 0;
+
+      const scored = scoreSurf10({
+        windMph: w.wind_mph != null ? Math.round(w.wind_mph) : null,
+        waveFt: ww.wave_ft,
+        periodS: ww.period_s,
+        windDirBonus: bonus,
+      });
+
+      return {
+        time: h.time,
+        score: typeof scored.score10 === "number" ? scored.score10 : null,
+        wind_mph: w.wind_mph,
+        wind_dir_deg: w.wind_dir_deg,
+        wave_ft: ww.wave_ft,
+        period_s: ww.period_s,
+      };
+    });
+
+    let best: { i: number; avg: number } | null = null;
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = points[i]?.score;
+      const b = points[i + 1]?.score;
+      if (typeof a !== "number" || typeof b !== "number") continue;
+
+      const avg = (a + b) / 2;
+      if (!best || avg > best.avg) best = { i, avg };
+    }
+
+    const bestScore = best ? best.avg : null;
+    const bestStart = best ? points[best.i].time : null;
+    const bestEnd = best ? points[best.i + 1].time : null;
+
+    const bestLabel =
+      bestStart && bestEnd ? `${hourLabelNY(bestStart)}–${hourLabelNY(bestEnd)}` : null;
+
+    const rep = best ? points[best.i] : null;
+
+    let windMax: number | null = null;
+    for (const p of points) {
+      if (p.wind_mph == null) continue;
+      windMax = windMax == null ? p.wind_mph : Math.max(windMax, p.wind_mph);
+    }
+
+    const t = tempsByDate.get(d);
+
+    out.push({
+      date: d,
+      score_best: bestScore != null ? Math.round(bestScore * 10) / 10 : null,
+      best_window_label: bestLabel,
+      wave_ft: rep?.wave_ft ?? null,
+      period_s: rep?.period_s ?? null,
+      wind_mph: rep?.wind_mph ?? null,
+      wind_dir_deg: rep?.wind_dir_deg ?? null,
+      wind_max_mph: windMax != null ? Math.round(windMax) : null,
+      temp_max_f: t?.temp_max_f ?? null,
+      temp_min_f: t?.temp_min_f ?? null,
+    });
+  }
+
+  return out;
 }
 
 export async function fetchTideNOAA(station: string): Promise<TideData> {

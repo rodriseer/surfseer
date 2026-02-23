@@ -1,12 +1,17 @@
+// app/_shared/SpotPage.tsx
 import Image from "next/image";
 import SpotPicker from "@/components/SpotPicker";
 import ShareButton from "@/components/ShareButton";
 import SubscribeBox from "@/components/SubscribeBox";
 import HourlyChart from "@/components/HourlyChart";
-import { fetchToday, fetchTideNOAA } from "@/lib/surfData";
+import CopyReportButton from "@/components/CopyReportButton";
+
+import WetsuitPanel from "@/components/WetsuitPanel";
+import SpotNotesPanel from "@/components/SpotNotesPanel";
+
+import { fetchToday, fetchTideNOAA, fetchOutlook5d } from "@/lib/surfData";
 import { bestWindow2h, degToCompass, scoreSurf10, windQuality } from "@/lib/surfScore";
 import { SPOTS, type SpotId } from "@/lib/spots";
-import CopyReportButton from "@/components/CopyReportButton";
 
 const NOAA_TIDE_STATION = "8570283";
 
@@ -48,7 +53,7 @@ function Metric({ label, value, sub }: { label: string; value: string; sub: stri
   );
 }
 
-/* ---------- NEW: best-window helper (by score) ---------- */
+/* ---------- best-window helper (by score) ---------- */
 
 function best2hByScore(points: Array<{ time: string; score: number | null }>) {
   let best: { start: string; end: string; avg: number } | null = null;
@@ -73,9 +78,10 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
   const fallbackKey = Object.keys(SPOTS)[0] as SpotId;
   const selected = SPOTS[spotId] ?? SPOTS[fallbackKey];
 
-  const [today, tide] = await Promise.all([
+  const [today, tide, outlook] = await Promise.all([
     fetchToday(selected.lat, selected.lon),
     fetchTideNOAA(NOAA_TIDE_STATION),
+    fetchOutlook5d(selected.lat, selected.lon, selected.beachFacingDeg),
   ]);
 
   const windMph =
@@ -108,6 +114,15 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
     periodS,
     windDirBonus: wq?.bonus ?? 0,
   });
+
+  const beginner =
+    waveFt != null &&
+    windMph != null &&
+    periodS != null &&
+    waveFt >= 1.0 &&
+    waveFt <= 3.5 &&
+    windMph <= 15 &&
+    periodS >= 6;
 
   const pill =
     scored.score10 == null
@@ -149,8 +164,6 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
       }
     : null;
 
-  /* ---------- UPDATED: chartData now includes hourly surf score ---------- */
-
   const chartData = hourly.slice(0, 12).map((h) => {
     const hmph =
       h.wind_mph != null && Number.isFinite(h.wind_mph) ? Math.round(h.wind_mph) : null;
@@ -185,7 +198,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
 
   return (
     <div className="min-h-screen bg-transparent text-white">
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/25 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-black/25 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <Image
@@ -227,11 +240,18 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
             <div>
               <p className="text-xs font-semibold text-white/70">Selected spot</p>
 
-              <div className="mt-1 flex items-center gap-2">
+              <div className="mt-1 flex flex-wrap items-center gap-2">
                 <p className="text-2xl font-extrabold">{selected.name}</p>
+
                 <span className={`uplift rounded-full px-2.5 py-1 text-xs font-bold ${surf.pill}`}>
                   {surf.status}
                 </span>
+
+                {beginner ? (
+                  <span className="uplift rounded-full px-2.5 py-1 text-xs font-bold bg-white/10 text-white/80 border border-white/10">
+                    Beginner-friendly
+                  </span>
+                ) : null}
               </div>
 
               <div className="mt-2 flex items-center gap-2">
@@ -279,7 +299,6 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
 
           <Divider />
 
-          {/* UPDATED: Best window now prioritizes best-surf-score window, falls back to wind window */}
           <div className="glass soft-shadow rounded-2xl p-5">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold">Best window</p>
@@ -303,6 +322,59 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
             <HourlyChart data={chartData} />
           </div>
 
+          {/* 5-day outlook */}
+          <section className="mt-10 glass soft-shadow rounded-3xl p-8 sm:p-10">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold text-white/70">Outlook</p>
+                <h2 className="mt-2 text-xl font-extrabold">Next 5 days</h2>
+                <p className="mt-2 text-sm text-white/70">
+                  Best 2-hour window each day (cached ~30 min).
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="text-white/70">
+                  <tr className="border-b border-white/10">
+                    <th className="py-3 pr-4 font-semibold">Date</th>
+                    <th className="py-3 pr-4 font-semibold">Best window</th>
+                    <th className="py-3 pr-4 font-semibold">Score</th>
+                    <th className="py-3 pr-4 font-semibold">Wave</th>
+                    <th className="py-3 pr-4 font-semibold">Period</th>
+                    <th className="py-3 pr-4 font-semibold">Wind max</th>
+                    <th className="py-3 pr-0 font-semibold">Temp</th>
+                  </tr>
+                </thead>
+
+                <tbody className="text-white/85">
+                  {(outlook ?? []).map((d) => (
+                    <tr key={d.date} className="border-b border-white/10">
+                      <td className="py-3 pr-4 whitespace-nowrap">{d.date}</td>
+                      <td className="py-3 pr-4 whitespace-nowrap">{d.best_window_label ?? "—"}</td>
+                      <td className="py-3 pr-4 font-extrabold">
+                        {d.score_best != null ? d.score_best.toFixed(1) : "—"}
+                      </td>
+                      <td className="py-3 pr-4">
+                        {d.wave_ft != null ? `${d.wave_ft.toFixed(1)} ft` : "—"}
+                      </td>
+                      <td className="py-3 pr-4">{d.period_s != null ? `${d.period_s}s` : "—"}</td>
+                      <td className="py-3 pr-4">
+                        {d.wind_max_mph != null ? `${d.wind_max_mph} mph` : "—"}
+                      </td>
+                      <td className="py-3 pr-0">
+                        {d.temp_min_f != null && d.temp_max_f != null
+                          ? `${Math.round(d.temp_min_f)}–${Math.round(d.temp_max_f)}°F`
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
             <ShareButton />
             <CopyReportButton
@@ -317,6 +389,10 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
           <div className="mt-7">
             <SubscribeBox spotId={selected.id} />
           </div>
+
+          {/* New content blocks */}
+          <WetsuitPanel spotId={selected.id as SpotId} />
+          <SpotNotesPanel spotId={selected.id as SpotId} />
         </section>
 
         <footer className="mt-16 border-t border-white/10 pt-8 text-sm text-white/60">

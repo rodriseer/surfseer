@@ -7,6 +7,14 @@ export const SPOTS = {
     lat: 38.3287,
     lon: -75.0913,
     beachFacingDeg: 90,
+    notes: {
+      waveType: "Inlet / jetty + sandbar",
+      bestSwell: "NE–E",
+      bestWind: "W–NW (offshore/side-off)",
+      bestTide: "Mid to high (varies by sandbar)",
+      hazards: ["Strong current near inlet", "Crowd in summer", "Jetty rocks"],
+      crowd: "High in season",
+    },
   },
   "oc-north": {
     id: "oc-north",
@@ -14,6 +22,14 @@ export const SPOTS = {
     lat: 38.4066,
     lon: -75.057,
     beachFacingDeg: 85,
+    notes: {
+      waveType: "Beach break",
+      bestSwell: "E–SE (depends on bars)",
+      bestWind: "W–NW",
+      bestTide: "Mid tide often cleaner",
+      hazards: ["Closeouts on steep swell", "Rip currents"],
+      crowd: "Medium–High",
+    },
   },
   assateague: {
     id: "assateague",
@@ -21,6 +37,14 @@ export const SPOTS = {
     lat: 38.0534,
     lon: -75.2443,
     beachFacingDeg: 110,
+    notes: {
+      waveType: "Wild beach break",
+      bestSwell: "E–SE",
+      bestWind: "W–NW",
+      bestTide: "Mid tide",
+      hazards: ["Rips", "Long walks", "Shifting sandbars"],
+      crowd: "Low–Medium",
+    },
   },
   oceancity: {
     id: "oceancity",
@@ -30,7 +54,6 @@ export const SPOTS = {
     beachFacingDeg: 90,
   },
 
-  // --- New spots ---
   "indian-river-inlet": {
     id: "indian-river-inlet",
     name: "Indian River Inlet, DE",
