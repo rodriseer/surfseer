@@ -6,32 +6,14 @@ import { fetchToday, fetchTideNOAA } from "@/lib/surfData";
 import { bestWindow2h, degToCompass, scoreSurf10, windQuality } from "@/lib/surfScore";
 
 export const SPOTS = [
-  {
-    id: "oc-inlet",
-    name: "Ocean City (Inlet)",
-    lat: 38.3287,
-    lon: -75.0913,
-    beachFacingDeg: 90, // faces east
-  },
-  {
-    id: "oc-north",
-    name: "Ocean City (Northside)",
-    lat: 38.4066,
-    lon: -75.057,
-    beachFacingDeg: 85, // slightly ENE
-  },
-  {
-    id: "assateague",
-    name: "Assateague",
-    lat: 38.0534,
-    lon: -75.2443,
-    beachFacingDeg: 110, // more E/SE-ish
-  },
+  { id: "oc-inlet", name: "Ocean City (Inlet)", lat: 38.3287, lon: -75.0913, beachFacingDeg: 90 },
+  { id: "oc-north", name: "Ocean City (Northside)", lat: 38.4066, lon: -75.057, beachFacingDeg: 85 },
+  { id: "assateague", name: "Assateague", lat: 38.0534, lon: -75.2443, beachFacingDeg: 110 },
 ] as const;
 
 export type SpotId = (typeof SPOTS)[number]["id"];
 
-const NOAA_TIDE_STATION = "8570283"; // Ocean City Inlet, MD
+const NOAA_TIDE_STATION = "8570283";
 
 /* ---------- formatting helpers ---------- */
 
@@ -55,6 +37,20 @@ function tideTypeLabel(t: string) {
   if (t === "H") return "High";
   if (t === "L") return "Low";
   return t || "—";
+}
+
+function Divider() {
+  return <div className="my-5 h-px w-full bg-zinc-200/70" />;
+}
+
+function Metric({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <div className="rounded-xl border border-zinc-200 bg-white p-4">
+      <p className="text-xs font-semibold text-zinc-500">{label}</p>
+      <p className="mt-1 text-lg font-extrabold">{value}</p>
+      <p className="mt-1 text-xs text-zinc-500">{sub}</p>
+    </div>
+  );
 }
 
 /* ---------- component ---------- */
@@ -86,11 +82,9 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
   const nextTideLabel =
     next?.type && next?.time ? `${tideTypeLabel(next.type)} ${formatTime(next.time)}` : "—";
 
-  // Stormglass-derived wave + period (from fetchToday)
   const waveFt = today?.wave_ft ?? null;
   const periodS = today?.period_s ?? null;
 
-  // wind type (offshore/onshore/etc.)
   const wq = windDeg != null ? windQuality(windDeg, selected.beachFacingDeg) : null;
 
   const scored = scoreSurf10({
@@ -111,12 +105,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
             ? "bg-amber-50 text-amber-700"
             : "bg-rose-50 text-rose-700";
 
-  const surf = {
-    score: scored.score10,
-    status: scored.status,
-    pill,
-    take: scored.take,
-  };
+  const surf = { score: scored.score10, status: scored.status, pill, take: scored.take };
 
   const hourly: Array<{
     time: string;
@@ -146,10 +135,6 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
 
   return (
     <div className="min-h-screen bg-white text-zinc-900">
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_50%_0%,rgba(56,189,248,0.14),transparent_60%)]" />
-      </div>
-
       <header className="sticky top-0 z-50 border-b border-zinc-200/60 bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
@@ -167,29 +152,16 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
             </div>
           </div>
 
-          <nav className="hidden items-center gap-6 text-sm font-semibold text-zinc-600 md:flex">
-            <a className="hover:text-zinc-900" href="#today">
-              Today
-            </a>
-            <a className="hover:text-zinc-900" href="#forecast">
-              Forecast
-            </a>
-            <a className="hover:text-zinc-900" href="#about">
-              About
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <div className="hidden md:block">
-              <SpotPicker />
-            </div>
-            <a
-              href="#today"
-              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
-            >
-              Check now
-            </a>
+          <div className="hidden md:block">
+            <SpotPicker />
           </div>
+
+          <a
+            href="#today"
+            className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
+          >
+            Check now
+          </a>
         </div>
 
         <div className="border-t border-zinc-200/60 bg-white/80 px-6 py-3 backdrop-blur md:hidden">
@@ -198,74 +170,78 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 pb-20 pt-10">
-        <section className="grid gap-10 md:grid-cols-2 md:items-start">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold text-zinc-500">Selected spot</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <p className="text-xl font-extrabold">{selected.name}</p>
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${surf.pill}`}>
-                    {surf.status}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-zinc-500">Updated: {updated}</p>
-              </div>
-
-              <div className="text-right">
-                <p className="text-xs font-semibold text-zinc-500">Surf score</p>
-                <p className="mt-1 text-3xl font-extrabold tracking-tight">
-                  {surf.score != null ? surf.score.toFixed(1) : "—"}
-                </p>
-                <p className="text-xs text-zinc-500">out of 10</p>
-              </div>
-            </div>
-
-            <Divider />
-
-            <div className="grid grid-cols-2 gap-3">
-              <Metric label="Swell" value={waveFt != null ? `${waveFt.toFixed(1)} ft` : "—"} sub="Stormglass (NOAA)" />
-              <Metric label="Period" value={periodS != null ? `${periodS}s` : "—"} sub="Stormglass (NOAA)" />
-              <Metric
-                label="Wind"
-                value={windMph != null ? `${windMph} mph` : "—"}
-                sub={
-                  windDir != null && windDeg != null && wq
-                    ? `${wq.label} • ${windDir} (${windDeg}°)`
-                    : "—"
-                }
-              />
-              <Metric label="Tide" value={nextTideLabel} sub="NOAA predictions" />
-            </div>
-
-            <Divider />
-
-            <div className="rounded-xl border border-zinc-200 bg-white p-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold">Best window</p>
-                <span className="text-xs font-semibold text-zinc-500">
-                  {window2h ? window2h.label : "—"}
+        <section
+          id="today"
+          className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)]"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold text-zinc-500">Selected spot</p>
+              <div className="mt-1 flex items-center gap-2">
+                <p className="text-xl font-extrabold">{selected.name}</p>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${surf.pill}`}>
+                  {surf.status}
                 </span>
               </div>
-              <p className="mt-2 text-sm leading-6 text-zinc-600">
-                {window2h
-                  ? `Lowest wind window today (prefers offshore/side-off when possible). Wind: ${window2h.windLabel}.`
-                  : "Hourly wind is loading…"}
+              <p className="mt-1 text-sm text-zinc-500">Updated: {updated}</p>
+            </div>
+
+            <div className="text-right">
+              <p className="text-xs font-semibold text-zinc-500">Surf score</p>
+              <p className="mt-1 text-3xl font-extrabold tracking-tight">
+                {surf.score != null ? surf.score.toFixed(1) : "—"}
               </p>
+              <p className="text-xs text-zinc-500">out of 10</p>
             </div>
+          </div>
 
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-              <button className="rounded-xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800">
-                Save as favorite
-              </button>
+          <Divider />
 
-              <ShareButton className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold hover:bg-zinc-50" />
+          <div className="grid grid-cols-2 gap-3">
+            <Metric
+              label="Swell"
+              value={waveFt != null ? `${waveFt.toFixed(1)} ft` : "—"}
+              sub="Stormglass (NOAA)"
+            />
+            <Metric
+              label="Period"
+              value={periodS != null ? `${periodS}s` : "—"}
+              sub="Stormglass (NOAA)"
+            />
+            <Metric
+              label="Wind"
+              value={windMph != null ? `${windMph} mph` : "—"}
+              sub={
+                windDir != null && windDeg != null && wq
+                  ? `${wq.label} • ${windDir} (${windDeg}°)`
+                  : "—"
+              }
+            />
+            <Metric label="Tide" value={nextTideLabel} sub="NOAA predictions" />
+          </div>
+
+          <Divider />
+
+          <div className="rounded-xl border border-zinc-200 bg-white p-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold">Best window</p>
+              <span className="text-xs font-semibold text-zinc-500">
+                {window2h ? window2h.label : "—"}
+              </span>
             </div>
+            <p className="mt-2 text-sm leading-6 text-zinc-600">
+              {window2h
+                ? `Lowest wind window today (prefers offshore/side-off when possible). Wind: ${window2h.windLabel}.`
+                : "Hourly wind is loading…"}
+            </p>
+          </div>
 
-            {/* ✅ NEW: Email capture */}
-            <div className="mt-6">
-              <SubscribeBox spotId={selected.id} />
-            </div>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <ShareButton className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold hover:bg-zinc-50" />
+          </div>
+
+          <div className="mt-6">
+            <SubscribeBox spotId={selected.id} />
           </div>
         </section>
 
@@ -273,22 +249,6 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
           © {new Date().getFullYear()} SurfSeer
         </footer>
       </main>
-    </div>
-  );
-}
-
-/* ---------- UI helpers ---------- */
-
-function Divider() {
-  return <div className="my-5 h-px w-full bg-zinc-200/70" />;
-}
-
-function Metric({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4">
-      <p className="text-xs font-semibold text-zinc-500">{label}</p>
-      <p className="mt-1 text-lg font-extrabold">{value}</p>
-      <p className="mt-1 text-xs text-zinc-500">{sub}</p>
     </div>
   );
 }

@@ -3,15 +3,12 @@
 export type TodayData = {
   updated: string;
 
-  // “now”
   wind_mph: number | null;
   wind_dir_deg: number | null;
 
-  // “now” ocean conditions (Stormglass)
   wave_ft: number | null;
   period_s: number | null;
 
-  // next 48 hours
   hourly: Array<{
     time: string;
     wind_mph: number | null;
@@ -20,7 +17,6 @@ export type TodayData = {
     period_s: number | null;
   }>;
 
-  // 3-day cards
   forecast: Array<{
     date: string;
     wind_max_mph: number | null;
@@ -61,18 +57,12 @@ function cToF(c: number | null) {
 }
 
 function dateKey(isoTime: string) {
-  // "2026-02-22T03:00:00Z" -> "2026-02-22"
-  // Works even if not Z, since split("T")[0] is stable.
   const d = String(isoTime ?? "");
   return d.includes("T") ? d.split("T")[0] : d.slice(0, 10);
 }
 
 /* ----------------- simple TTL cache ----------------- */
-/**
- * Protects your Stormglass quota.
- * Cache is per (lat,lon) for 20 minutes.
- * Note: in-memory cache resets on redeploy/restart (fine for now).
- */
+
 const TTL_MS = 1000 * 60 * 20;
 const stormCache = new Map<string, { ts: number; data: TodayData }>();
 
@@ -88,11 +78,27 @@ type StormglassHour = {
   swellPeriod?: { noaa?: number };
 };
 
+function pickCurrentHourIndex(hours: StormglassHour[]): number {
+  const nowMs = Date.now();
+  let bestIdx = 0;
+  let bestDiff = Infinity;
+
+  for (let i = 0; i < hours.length; i++) {
+    const tMs = Date.parse(hours[i]?.time);
+    if (!Number.isFinite(tMs)) continue;
+
+    const diff = Math.abs(tMs - nowMs);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestIdx = i;
+    }
+  }
+  return bestIdx;
+}
+
 async function fetchStormglassPoint(lat: number, lon: number) {
   const key = process.env.STORMGLASS_API_KEY;
-  if (!key) {
-    throw new Error("Missing STORMGLASS_API_KEY (set in .env.local and Vercel env vars).");
-  }
+  if (!key) throw new Error("Missing STORMGLASS_API_KEY");
 
   const params = new URLSearchParams({
     lat: String(lat),
@@ -111,18 +117,10 @@ async function fetchStormglassPoint(lat: number, lon: number) {
   let json: any = null;
   try {
     json = await res.json();
-  } catch {
-    // ignore
-  }
+  } catch {}
 
   if (!res.ok) {
-    const msg =
-      json?.errors?.[0]?.message ??
-      json?.message ??
-      `Stormglass request failed (${res.status})`;
-
-    if (res.status === 401) throw new Error(`Stormglass 401 (bad key): ${msg}`);
-    if (res.status === 429) throw new Error(`Stormglass 429 (rate limited): ${msg}`);
+    const msg = json?.errors?.[0]?.message ?? json?.message ?? `Stormglass request failed (${res.status})`;
     throw new Error(msg);
   }
 
@@ -138,20 +136,13 @@ function pickNoaa(x: any): number | null {
 function windFromHour(h: StormglassHour) {
   const mps = pickNoaa(h.windSpeed);
   const deg = pickNoaa(h.windDirection);
-  return {
-    wind_mph: mpsToMph(mps),
-    wind_dir_deg: deg != null ? Math.round(deg) : null,
-  };
+  return { wind_mph: mpsToMph(mps), wind_dir_deg: deg != null ? Math.round(deg) : null };
 }
 
 function waveFromHour(h: StormglassHour) {
-  // Prefer waveHeight/wavePeriod. If missing, fallback to swellHeight/swellPeriod.
   const waveM = pickNoaa(h.waveHeight) ?? pickNoaa(h.swellHeight);
   const periodS = pickNoaa(h.wavePeriod) ?? pickNoaa(h.swellPeriod);
-  return {
-    wave_ft: mToFt(waveM),
-    period_s: periodS != null ? Math.round(periodS) : null,
-  };
+  return { wave_ft: mToFt(waveM), period_s: periodS != null ? Math.round(periodS) : null };
 }
 
 /* ----------------- Open-Meteo temps only ----------------- */
@@ -185,16 +176,12 @@ async function fetchTemps3Day(lat: number, lon: number) {
 export async function fetchToday(lat: number, lon: number): Promise<TodayData> {
   const cacheKey = `${lat.toFixed(4)},${lon.toFixed(4)}`;
   const hit = stormCache.get(cacheKey);
-  if (hit && Date.now() - hit.ts < TTL_MS) {
-    return hit.data;
-  }
+  if (hit && Date.now() - hit.ts < TTL_MS) return hit.data;
 
-  // Stormglass hourly (wind + waves)
   let hours: StormglassHour[] = [];
   try {
     hours = await fetchStormglassPoint(lat, lon);
-  } catch (e) {
-    // If Stormglass fails, return safe empty structure (prevents page crash)
+  } catch {
     return {
       updated: new Date().toISOString(),
       wind_mph: null,
@@ -206,26 +193,18 @@ export async function fetchToday(lat: number, lon: number): Promise<TodayData> {
     };
   }
 
-  // “now” = first hour
-  const nowHour = hours[0];
+  const idx = pickCurrentHourIndex(hours);
+  const nowHour = hours[idx] ?? hours[0];
+
   const nowWind = windFromHour(nowHour);
   const nowWave = waveFromHour(nowHour);
 
-  // 48h hourly for your “best window” algo + charts
-  const hourly = hours.slice(0, 48).map((h) => {
+  const hourly = hours.slice(idx, idx + 48).map((h) => {
     const w = windFromHour(h);
     const ww = waveFromHour(h);
-    return {
-      time: h.time,
-      wind_mph: w.wind_mph,
-      wind_dir_deg: w.wind_dir_deg,
-      wave_ft: ww.wave_ft,
-      period_s: ww.period_s,
-    };
+    return { time: h.time, wind_mph: w.wind_mph, wind_dir_deg: w.wind_dir_deg, wave_ft: ww.wave_ft, period_s: ww.period_s };
   });
 
-  // 3-day wind max computed from Stormglass hourly
-  // (We group by date and take max wind_mph)
   const windMaxByDate = new Map<string, number>();
   for (const h of hourly) {
     const dk = dateKey(h.time);
@@ -235,7 +214,6 @@ export async function fetchToday(lat: number, lon: number): Promise<TodayData> {
     if (prev == null || mph > prev) windMaxByDate.set(dk, mph);
   }
 
-  // Temps 3-day (Open-Meteo)
   const temps = await fetchTemps3Day(lat, lon);
 
   const forecast = temps.map((t) => ({
@@ -256,12 +234,10 @@ export async function fetchToday(lat: number, lon: number): Promise<TodayData> {
   };
 
   stormCache.set(cacheKey, { ts: Date.now(), data });
-
   return data;
 }
 
 export async function fetchTideNOAA(station: string): Promise<TideData> {
-  // NOAA CO-OPS “predictions” endpoint (high/low)
   const url = new URL("https://api.tidesandcurrents.noaa.gov/api/prod/datagetter");
   url.searchParams.set("product", "predictions");
   url.searchParams.set("application", "SurfSeer");
@@ -272,19 +248,13 @@ export async function fetchTideNOAA(station: string): Promise<TideData> {
   url.searchParams.set("interval", "hilo");
   url.searchParams.set("format", "json");
 
-  // A safe begin/end window (NOAA doesn't reliably accept "latest")
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
-  const y = now.getFullYear();
-  const m = pad(now.getMonth() + 1);
-  const d = pad(now.getDate());
-  const begin = `${y}${m}${d}`;
+
+  const begin = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
 
   const endDate = new Date(now.getTime() + 1000 * 60 * 60 * 24 * 2);
-  const y2 = endDate.getFullYear();
-  const m2 = pad(endDate.getMonth() + 1);
-  const d2 = pad(endDate.getDate());
-  const end = `${y2}${m2}${d2}`;
+  const end = `${endDate.getFullYear()}${pad(endDate.getMonth() + 1)}${pad(endDate.getDate())}`;
 
   url.searchParams.set("begin_date", begin);
   url.searchParams.set("end_date", end);

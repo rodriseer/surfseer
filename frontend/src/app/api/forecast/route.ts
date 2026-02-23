@@ -1,6 +1,9 @@
 // src/app/api/forecast/route.ts
 
 export const runtime = "nodejs";
+// Force dynamic behavior (prevents Next from trying to prerender/cache this route)
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 import { ok, fail } from "@/lib/apiResponse";
 import { TTLCache } from "@/lib/ttlCache";
@@ -38,27 +41,58 @@ function mToFt(m: number | null) {
   return round1(m * 3.28084);
 }
 
+/**
+ * Stormglass returns an array of hourly points. Using hours[0] can look "stuck"
+ * (often it's the first hour in the requested window). We pick the hour closest to now.
+ */
+function pickCurrentHourIndex(hours: any[]): number {
+  const nowMs = Date.now();
+  let bestIdx = 0;
+  let bestDiff = Infinity;
+
+  for (let i = 0; i < hours.length; i++) {
+    const tMs = Date.parse(hours[i]?.time);
+    if (!Number.isFinite(tMs)) continue;
+
+    const diff = Math.abs(tMs - nowMs);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestIdx = i;
+    }
+  }
+  return bestIdx;
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const spot = (searchParams.get("spot") ?? "oc-inlet") as SpotId;
 
+    const spot = (searchParams.get("spot") ?? "oc-inlet") as SpotId;
     const selected = SPOTS.find((s) => s.id === spot) ?? SPOTS[0];
+
+    // Optional: allow forcing a fresh call (e.g., your "Check now" button can use &force=1)
+    const force = searchParams.get("force") === "1" || searchParams.get("force") === "true";
 
     const cache = getCache();
 
-    // 1) Cache hit
-    const hit = cache.get(selected.id);
-    if (hit.hit) {
-      return ok(hit.value, { cached: true });
+    // 1) Cache hit (unless forced)
+    if (!force) {
+      const hit = cache.get(selected.id);
+      if (hit.hit) {
+        return ok(hit.value, { cached: true });
+      }
     }
 
     // 2) Fetch fresh
     const { hours } = await fetchStormglass({ lat: selected.lat, lon: selected.lon });
-
-    const now = hours?.[0];
-    if (!now) {
+    if (!hours?.length) {
       return fail("No forecast hours returned from Stormglass", 502);
+    }
+
+    const idx = pickCurrentHourIndex(hours);
+    const now = hours[idx];
+    if (!now) {
+      return fail("No usable forecast hour returned from Stormglass", 502);
     }
 
     const windMps = pickNoaaNumber(now.windSpeed);
@@ -78,7 +112,7 @@ export async function GET(req: Request) {
       windDirBonus,
     });
 
-    const hourly = hours.slice(0, 24).map((h: any) => ({
+    const hourly = hours.slice(idx, idx + 24).map((h: any) => ({
       time: h.time,
       windMph:
         typeof h.windSpeed?.noaa === "number" && Number.isFinite(h.windSpeed.noaa)
@@ -96,9 +130,18 @@ export async function GET(req: Request) {
       beachFacingDeg: selected.beachFacingDeg,
     });
 
+    // Use a real "fetched at" timestamp for your UI "Updated:" label
+    const fetchedAtISO = new Date().toISOString();
+
     const data = {
       spot: { id: selected.id, name: selected.name, lat: selected.lat, lon: selected.lon },
-      updatedAtISO: now.time,
+
+      // Backwards-compatible (your UI uses this): this is when *your* server fetched.
+      updatedAtISO: fetchedAtISO,
+
+      // Extra clarity (optional to render in UI)
+      fetchedAtISO,
+      forecastTimeISO: now.time,
 
       now: {
         waveHeightFt: waveFt,
@@ -124,7 +167,6 @@ export async function GET(req: Request) {
 
     return ok(data, { cached: false });
   } catch (e) {
-    // ✅ show real error in Vercel logs
     console.error("FORECAST ROUTE ERROR:", e);
     const msg = e instanceof Error ? e.stack ?? e.message : String(e);
     return fail(msg, 500);

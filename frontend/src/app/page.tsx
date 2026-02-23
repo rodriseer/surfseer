@@ -10,6 +10,8 @@ type ApiResponse<T> = ApiOk<T> | ApiErr;
 type SurfReport = {
   spot?: { name?: string };
   updatedAtISO?: string;
+  fetchedAtISO?: string;
+  forecastTimeISO?: string;
   now?: {
     waveHeightFt?: number | null;
     wavePeriodS?: number | null;
@@ -17,6 +19,13 @@ type SurfReport = {
     score10?: number | null;
   };
 };
+
+function fmtLocal(iso?: string) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString();
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -26,11 +35,9 @@ export default function HomePage() {
   const [report, setReport] = useState<SurfReport | null>(null);
 
   useEffect(() => {
-    // If your real homepage is /spot/[spotId], send users there.
     router.replace("/spot/oc-inlet");
   }, [router]);
 
-  // Optional: keep a tiny API smoke-test here (won’t crash the UI)
   useEffect(() => {
     let cancelled = false;
 
@@ -39,7 +46,8 @@ export default function HomePage() {
         setError(null);
         setLoading(true);
 
-        const res = await fetch("/api/forecast?spot=assateague", { cache: "no-store" });
+        // No-store + force=1 ensures you are seeing the freshest "now" selection
+        const res = await fetch("/api/forecast?spot=assateague&force=1", { cache: "no-store" });
         const json = (await res.json()) as ApiResponse<SurfReport>;
 
         if (!res.ok || json.ok === false) {
@@ -66,14 +74,11 @@ export default function HomePage() {
     };
   }, []);
 
-  // This page will usually redirect instantly; these renders are just a fallback
   return (
     <main className="min-h-screen bg-white text-zinc-900">
       <div className="mx-auto max-w-3xl px-6 py-12">
         <h1 className="text-2xl font-extrabold tracking-tight">SurfSeer</h1>
-        <p className="mt-2 text-sm text-zinc-600">
-          Redirecting you to today’s spot report…
-        </p>
+        <p className="mt-2 text-sm text-zinc-600">Redirecting you to today’s spot report…</p>
 
         <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5">
           {loading ? (
@@ -85,9 +90,11 @@ export default function HomePage() {
           ) : (
             <div className="text-sm text-zinc-700">
               <div className="font-semibold">API smoke-test OK ✅</div>
-              <div className="mt-2 text-zinc-600">
-                Spot: {report?.spot?.name ?? "—"}
-              </div>
+              <div className="mt-2 text-zinc-600">Spot: {report?.spot?.name ?? "—"}</div>
+              <div className="mt-1 text-zinc-600">Updated (server fetch): {fmtLocal(report?.updatedAtISO)}</div>
+              {report?.forecastTimeISO ? (
+                <div className="mt-1 text-zinc-600">Forecast hour used: {fmtLocal(report?.forecastTimeISO)}</div>
+              ) : null}
             </div>
           )}
 

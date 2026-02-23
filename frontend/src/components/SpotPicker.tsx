@@ -11,7 +11,6 @@ const SPOTS = [
 type SpotId = (typeof SPOTS)[number]["id"];
 
 function getSpotFromPath(pathname: string): SpotId {
-  // Expected: /spot/<spotId>
   const parts = pathname.split("/").filter(Boolean);
   const spotId = parts[0] === "spot" ? parts[1] : null;
 
@@ -22,11 +21,11 @@ function getSpotFromPath(pathname: string): SpotId {
 export default function SpotPicker() {
   const router = useRouter();
   const pathname = usePathname();
-
   const current = getSpotFromPath(pathname);
 
   function setSpot(id: SpotId) {
     router.push(`/spot/${id}`);
+    router.refresh(); // ✅ forces server component to refetch
   }
 
   return (

@@ -1,6 +1,10 @@
+// src/app/api/<your-daily-route>/route.ts
+
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { supabaseAdmin } from "@/lib/supabaseServer";
 import { fetchToday, fetchTideNOAA } from "@/lib/surfData";
 import { scoreSurf10, windQuality, degToCompass } from "@/lib/surfScore";
 
@@ -120,7 +124,8 @@ export async function POST(req: Request) {
     const resend = new Resend(reqEnv("RESEND_API_KEY"));
     const from = reqEnv("FROM_EMAIL");
 
-    const supabase = supabaseServer();
+    // ✅ Use admin client so SELECT works even with RLS enabled
+    const supabase = supabaseAdmin();
 
     // get subscribers (limit for safety)
     const { data: subs, error } = await supabase
