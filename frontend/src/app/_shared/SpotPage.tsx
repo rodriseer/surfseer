@@ -1,10 +1,16 @@
-// app/_shared/SpotPage.tsx
+// src/app/_shared/SpotPage.tsx  (FULL FILE - decluttered layout)
+//
+// NOTE: This replaces the Metric() grid with ONE “Conditions” block,
+// reduces dividers, and makes secondary blocks use glass-lite (no shadow).
+//
 import Image from "next/image";
 import SpotPicker from "@/components/SpotPicker";
 import ShareButton from "@/components/ShareButton";
 import SubscribeBox from "@/components/SubscribeBox";
 import HourlyChart from "@/components/HourlyChart";
 import CopyReportButton from "@/components/CopyReportButton";
+import FavoriteButton from "@/components/FavoriteButton";
+import SessionPlannerCard from "@/components/SessionPlannerCard";
 
 import WetsuitPanel from "@/components/WetsuitPanel";
 import SpotNotesPanel from "@/components/SpotNotesPanel";
@@ -40,20 +46,8 @@ function tideTypeLabel(t: string) {
 }
 
 function Divider() {
-  return <div className="my-7 h-px w-full bg-white/10" />;
+  return <div className="my-10 h-px w-full bg-white/10" />;
 }
-
-function Metric({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return (
-    <div className="glass soft-shadow uplift rounded-2xl p-4">
-      <p className="text-xs font-semibold text-white/70">{label}</p>
-      <p className="mt-1 text-lg font-extrabold text-white">{value}</p>
-      <p className="mt-1 text-xs text-white/60">{sub}</p>
-    </div>
-  );
-}
-
-/* ---------- best-window helper (by score) ---------- */
 
 function best2hByScore(points: Array<{ time: string; score: number | null }>) {
   let best: { start: string; end: string; avg: number } | null = null;
@@ -70,6 +64,43 @@ function best2hByScore(points: Array<{ time: string; score: number | null }>) {
   }
 
   return best;
+}
+
+function pickBestUpcoming(outlook: any[] | null | undefined) {
+  const days = Array.isArray(outlook) ? outlook : [];
+  const candidates = days
+    .filter((d) => typeof d?.score_best === "number" && Number.isFinite(d.score_best))
+    .map((d) => ({
+      date: String(d.date ?? "—"),
+      bestWindow: String(d.best_window_label ?? "—"),
+      score: Number(d.score_best),
+      wave: typeof d.wave_ft === "number" ? d.wave_ft : null,
+      period: typeof d.period_s === "number" ? d.period_s : null,
+      windMax: typeof d.wind_max_mph === "number" ? d.wind_max_mph : null,
+      tempMin: typeof d.temp_min_f === "number" ? d.temp_min_f : null,
+      tempMax: typeof d.temp_max_f === "number" ? d.temp_max_f : null,
+    }));
+
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates[0];
+}
+
+function fmtSigned(n: number) {
+  if (n > 0) return `+${n.toFixed(1)}`;
+  return n.toFixed(1);
+}
+
+function fmtWave(waveFt: number | null) {
+  return waveFt != null ? `${waveFt.toFixed(1)} ft` : "—";
+}
+
+function fmtPeriod(periodS: number | null) {
+  return periodS != null ? `${Math.round(periodS)}s` : "—";
+}
+
+function fmtWind(windMph: number | null) {
+  return windMph != null ? `${windMph} mph` : "—";
 }
 
 /* ---------- component ---------- */
@@ -145,7 +176,6 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
     period_s: number | null;
   }> = Array.isArray(today?.hourly) ? today.hourly : [];
 
-  // Existing wind-only window (kept as fallback)
   const window2hRaw = bestWindow2h({
     hourly: hourly.map((h) => ({
       time: h.time,
@@ -165,8 +195,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
     : null;
 
   const chartData = hourly.slice(0, 12).map((h) => {
-    const hmph =
-      h.wind_mph != null && Number.isFinite(h.wind_mph) ? Math.round(h.wind_mph) : null;
+    const hmph = h.wind_mph != null && Number.isFinite(h.wind_mph) ? Math.round(h.wind_mph) : null;
 
     const hdeg =
       h.wind_dir_deg != null && Number.isFinite(h.wind_dir_deg) ? Math.round(h.wind_dir_deg) : null;
@@ -196,11 +225,19 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
     ? `${formatHourLabel(bestScoreWindow.start)}–${formatHourLabel(bestScoreWindow.end)}`
     : null;
 
+  const bestUpcoming = pickBestUpcoming(outlook);
+
+  const bestWindowNote = bestScoreWindow
+    ? `Avg score: ${bestScoreWindow.avg.toFixed(1)}/10`
+    : window2h
+      ? `Lowest wind window • ${window2h.windLabel}`
+      : "—";
+
   return (
     <div className="min-h-screen bg-transparent text-white">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/25 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-4">
+          <div className="flex items-center gap-3 min-w-0">
             <Image
               src="/logo.png"
               alt="SurfSeer logo"
@@ -209,11 +246,11 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               priority
               className="rounded-lg"
             />
-            <div className="leading-tight">
+            <div className="leading-tight min-w-0">
               <p className="text-base font-extrabold tracking-wide bg-gradient-to-r from-cyan-200 to-white/70 bg-clip-text text-transparent">
                 SurfSeer
               </p>
-              <p className="text-xs text-white/60">{selected.name}</p>
+              <p className="text-xs text-white/60 truncate">{selected.name}</p>
             </div>
           </div>
 
@@ -223,27 +260,31 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
 
           <a
             href="#today"
-            className="uplift rounded-2xl border border-cyan-300/20 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 glass hover:bg-cyan-500/15 transition"
+            className="uplift rounded-2xl border border-cyan-300/20 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100 glass hover:bg-cyan-500/15 transition"
           >
             Check now
           </a>
         </div>
 
-        <div className="border-t border-white/10 bg-black/20 px-6 py-3 backdrop-blur md:hidden">
+        <div className="border-t border-white/10 bg-black/20 px-4 sm:px-6 py-3 backdrop-blur md:hidden">
           <SpotPicker />
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 pb-20 pt-10">
-        <section id="today" className="glass soft-shadow rounded-3xl p-8 sm:p-10 fade-in">
-          <div className="flex items-start justify-between gap-4">
+      <main className="mx-auto max-w-6xl px-4 sm:px-6 pb-20 pt-10">
+        {/* Keep ONE strong primary container */}
+        <section id="today" className="glass soft-shadow rounded-3xl p-6 sm:p-10 fade-in">
+          {/* Top summary */}
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-semibold text-white/70">Selected spot</p>
 
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <p className="text-2xl font-extrabold">{selected.name}</p>
 
-                <span className={`uplift rounded-full px-2.5 py-1 text-xs font-bold ${surf.pill}`}>
+                <FavoriteButton spotId={selected.id} />
+
+                <span className={`uplift rounded-full px-2.5 py-1 text-xs font-bold ${pill}`}>
                   {surf.status}
                 </span>
 
@@ -260,7 +301,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               </div>
             </div>
 
-            <div className="text-right">
+            <div className="sm:text-right">
               <p className="text-xs font-semibold text-white/70">Surf score</p>
               <div className="relative inline-block">
                 <div className="absolute inset-0 -z-10 blur-2xl opacity-35 bg-cyan-400/25 rounded-full" />
@@ -272,34 +313,160 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
             </div>
           </div>
 
+          {/* Keep dividers only between BIG sections */}
           <Divider />
 
-          <div className="grid grid-cols-2 gap-3">
-            <Metric
-              label="Swell"
-              value={waveFt != null ? `${waveFt.toFixed(1)} ft` : "—"}
-              sub="Stormglass (NOAA)"
+          {/* Optional: best upcoming (lighter, secondary weight) */}
+          {bestUpcoming ? (
+            <div className="glass-lite rounded-3xl p-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold">Best this week</p>
+                <span className="text-xs font-semibold text-white/70">
+                  {bestUpcoming.score.toFixed(1)}/10
+                </span>
+              </div>
+
+              <p className="mt-2 text-sm text-white/80">
+                <span className="font-semibold">{bestUpcoming.date}</span> •{" "}
+                <span className="font-semibold">{bestUpcoming.bestWindow}</span>
+              </p>
+
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-white/75">
+                <div>
+                  <span className="text-white/60">Wave:</span>{" "}
+                  {bestUpcoming.wave != null ? `${bestUpcoming.wave.toFixed(1)} ft` : "—"}
+                </div>
+                <div>
+                  <span className="text-white/60">Period:</span>{" "}
+                  {bestUpcoming.period != null ? `${bestUpcoming.period}s` : "—"}
+                </div>
+                <div>
+                  <span className="text-white/60">Wind max:</span>{" "}
+                  {bestUpcoming.windMax != null ? `${bestUpcoming.windMax} mph` : "—"}
+                </div>
+                <div>
+                  <span className="text-white/60">Temp:</span>{" "}
+                  {bestUpcoming.tempMin != null && bestUpcoming.tempMax != null
+                    ? `${Math.round(bestUpcoming.tempMin)}–${Math.round(bestUpcoming.tempMax)}°F`
+                    : "—"}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="mt-6">
+            <SessionPlannerCard
+              spotName={selected.name}
+              score={surf.score}
+              status={surf.status}
+              bestWindowLabel={bestScoreWindowLabel ?? window2h?.label ?? null}
+              bestWindowNote={bestWindowNote}
+              waveFt={waveFt}
+              periodS={periodS}
+              windMph={windMph}
+              windLabel={wq?.label ?? null}
+              tideLabel={nextTideLabel}
+              beginner={beginner}
             />
-            <Metric
-              label="Period"
-              value={periodS != null ? `${periodS}s` : "—"}
-              sub="Stormglass (NOAA)"
-            />
-            <Metric
-              label="Wind"
-              value={windMph != null ? `${windMph} mph` : "—"}
-              sub={
-                windDir != null && windDeg != null && wq
-                  ? `${wq.label} • ${windDir} (${windDeg}°)`
-                  : "—"
-              }
-            />
-            <Metric label="Tide" value={nextTideLabel} sub="NOAA predictions" />
           </div>
 
-          <Divider />
+          {/* “Conditions” as ONE quieter block instead of 4 mini cards */}
+          <div className="mt-8 glass-lite rounded-3xl p-5">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="text-sm font-semibold">Conditions</h3>
+              <p className="text-xs text-white/60">Stormglass / NOAA</p>
+            </div>
 
-          <div className="glass soft-shadow rounded-2xl p-5">
+            <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-white/85">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs font-semibold text-white/60">Swell</p>
+                <p className="mt-1 text-lg font-extrabold text-white">{fmtWave(waveFt)}</p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs font-semibold text-white/60">Period</p>
+                <p className="mt-1 text-lg font-extrabold text-white">{fmtPeriod(periodS)}</p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs font-semibold text-white/60">Wind</p>
+                <p className="mt-1 text-lg font-extrabold text-white">{fmtWind(windMph)}</p>
+                <p className="mt-1 text-xs text-white/60">
+                  {wq?.label ?? "—"}
+                  {windDir != null && windDeg != null ? ` • ${windDir} (${windDeg}°)` : ""}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs font-semibold text-white/60">Next tide</p>
+                <p className="mt-1 text-lg font-extrabold text-white">{nextTideLabel}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Keep “why score” but make it quieter */}
+          {"breakdown" in scored && scored.breakdown ? (
+            <details className="mt-8 glass-lite rounded-3xl p-5">
+              <summary className="cursor-pointer select-none text-sm font-semibold">
+                Why this score?
+                <span className="ml-2 text-xs font-semibold text-white/60">(tap)</span>
+              </summary>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs font-semibold text-white/60">Base</p>
+                  <p className="mt-1 text-lg font-extrabold text-white">
+                    {scored.breakdown.base.toFixed(1)}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs font-semibold text-white/60">Total</p>
+                  <p className="mt-1 text-lg font-extrabold text-white">
+                    {scored.breakdown.totalClamped.toFixed(1)}
+                  </p>
+                  <p className="mt-1 text-xs text-white/60">
+                    Before clamp: {scored.breakdown.totalBeforeClamp.toFixed(1)}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs font-semibold text-white/60">Wave height</p>
+                  <p className="mt-1 text-lg font-extrabold text-white">
+                    {fmtSigned(scored.breakdown.wave)}
+                  </p>
+                  <p className="mt-1 text-xs text-white/60">{fmtWave(waveFt)}</p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs font-semibold text-white/60">Period</p>
+                  <p className="mt-1 text-lg font-extrabold text-white">
+                    {fmtSigned(scored.breakdown.period)}
+                  </p>
+                  <p className="mt-1 text-xs text-white/60">{fmtPeriod(periodS)}</p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs font-semibold text-white/60">Wind speed</p>
+                  <p className="mt-1 text-lg font-extrabold text-white">
+                    {fmtSigned(scored.breakdown.windSpeed)}
+                  </p>
+                  <p className="mt-1 text-xs text-white/60">{fmtWind(windMph)}</p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs font-semibold text-white/60">Wind direction</p>
+                  <p className="mt-1 text-lg font-extrabold text-white">
+                    {fmtSigned(scored.breakdown.windDir)}
+                  </p>
+                  <p className="mt-1 text-xs text-white/60">{wq?.label ?? "—"}</p>
+                </div>
+              </div>
+            </details>
+          ) : null}
+
+          {/* Best window stays, but secondary weight */}
+          <div className="mt-8 glass-lite rounded-3xl p-5">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold">Best window</p>
               <span className="text-xs font-semibold text-white/70">
@@ -309,32 +476,72 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
 
             <p className="mt-2 text-sm leading-6 text-white/70">
               {bestScoreWindow
-                ? `Top 2-hour surf window today based on wave + period + wind. Avg score: ${bestScoreWindow.avg.toFixed(
-                    1
-                  )}/10.`
+                ? `Top 2-hour window based on wave + period + wind. Avg score: ${bestScoreWindow.avg.toFixed(1)}/10.`
                 : window2h
-                  ? `Lowest wind window today (prefers offshore/side-off when possible). Wind: ${window2h.windLabel}.`
+                  ? `Lowest wind window. Wind: ${window2h.windLabel}.`
                   : "Hourly forecast is loading…"}
             </p>
           </div>
 
-          <div className="mt-6">
-            <HourlyChart data={chartData} />
-          </div>
-
-          {/* 5-day outlook */}
-          <section className="mt-10 glass soft-shadow rounded-3xl p-8 sm:p-10">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold text-white/70">Outlook</p>
-                <h2 className="mt-2 text-xl font-extrabold">Next 5 days</h2>
-                <p className="mt-2 text-sm text-white/70">
-                  Best 2-hour window each day (cached ~30 min).
-                </p>
+          {/* Chart: keep, but secondary */}
+          <div className="mt-8">
+            <div className="glass-lite rounded-3xl p-5">
+              <p className="text-sm font-semibold">Next 12 hours</p>
+              <p className="mt-1 text-xs text-white/60">Score trend</p>
+              <div className="mt-4">
+                <HourlyChart data={chartData} />
               </div>
             </div>
+          </div>
 
-            <div className="mt-6 overflow-x-auto">
+          <Divider />
+
+          {/* 5-day outlook (already has mobile cards) */}
+          <section className="glass-lite rounded-3xl p-6 sm:p-10">
+            <div>
+              <p className="text-xs font-semibold text-white/70">Outlook</p>
+              <h2 className="mt-2 text-xl font-extrabold">Next 5 days</h2>
+              <p className="mt-2 text-sm text-white/70">Best 2-hour window each day (cached ~30 min).</p>
+            </div>
+
+            <div className="mt-6 space-y-3 md:hidden">
+              {(outlook ?? []).map((d) => (
+                <div key={d.date} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div className="font-extrabold">{d.date}</div>
+                    <div className="text-sm font-semibold text-white/80">
+                      {d.score_best != null ? d.score_best.toFixed(1) : "—"} / 10
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-white/80">
+                    <div>
+                      <span className="text-white/60">Best:</span> {d.best_window_label ?? "—"}
+                    </div>
+                    <div>
+                      <span className="text-white/60">Wave:</span>{" "}
+                      {d.wave_ft != null ? `${d.wave_ft.toFixed(1)} ft` : "—"}
+                    </div>
+                    <div>
+                      <span className="text-white/60">Period:</span>{" "}
+                      {d.period_s != null ? `${d.period_s}s` : "—"}
+                    </div>
+                    <div>
+                      <span className="text-white/60">Wind max:</span>{" "}
+                      {d.wind_max_mph != null ? `${d.wind_max_mph} mph` : "—"}
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-white/60">Temp:</span>{" "}
+                      {d.temp_min_f != null && d.temp_max_f != null
+                        ? `${Math.round(d.temp_min_f)}–${Math.round(d.temp_max_f)}°F`
+                        : "—"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="text-white/70">
                   <tr className="border-b border-white/10">
@@ -375,7 +582,8 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
             </div>
           </section>
 
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+          {/* Actions */}
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <ShareButton />
             <CopyReportButton
               spotName={selected.name}
@@ -390,9 +598,15 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
             <SubscribeBox spotId={selected.id} />
           </div>
 
-          {/* New content blocks */}
-          <WetsuitPanel spotId={selected.id as SpotId} />
-          <SpotNotesPanel spotId={selected.id as SpotId} />
+          {/* These are “extra” sections — secondary weight */}
+          <div className="mt-8 space-y-6">
+            <div className="glass-lite rounded-3xl p-6">
+              <WetsuitPanel spotId={selected.id as SpotId} />
+            </div>
+            <div className="glass-lite rounded-3xl p-6">
+              <SpotNotesPanel spotId={selected.id as SpotId} />
+            </div>
+          </div>
         </section>
 
         <footer className="mt-16 border-t border-white/10 pt-8 text-sm text-white/60">

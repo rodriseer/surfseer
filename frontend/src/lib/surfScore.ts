@@ -1,6 +1,4 @@
-// src/lib/surfScore.ts
-
-// absolute angular difference in degrees (0..180)
+// src/lib/surfScore.ts (FULL FILE - includes breakdown + bestWindow2h)
 function angleDiff(a: number, b: number) {
   return Math.abs(((a - b + 540) % 360) - 180);
 }
@@ -44,37 +42,59 @@ export function scoreSurf10({
       score10: null as number | null,
       status: "—",
       take: "Loading conditions…",
+      breakdown: null as
+        | null
+        | {
+            base: number;
+            wave: number;
+            period: number;
+            windSpeed: number;
+            windDir: number;
+            totalBeforeClamp: number;
+            totalClamped: number;
+          },
     };
   }
 
+  const base = 5;
+  let waveAdj = 0;
+  let periodAdj = 0;
+  let windSpeedAdj = 0;
+  const windDirAdj = windDirBonus;
+
   // waves
   if (waveFt != null) {
-    if (waveFt < 1) score -= 2;
-    else if (waveFt < 2) score += 0;
-    else if (waveFt < 4) score += 2;
-    else score += 1;
+    if (waveFt < 1) waveAdj = -2;
+    else if (waveFt < 2) waveAdj = 0;
+    else if (waveFt < 4) waveAdj = 2;
+    else waveAdj = 1;
+    score += waveAdj;
   }
 
   // period
   if (periodS != null) {
-    if (periodS < 6) score -= 1;
-    else if (periodS < 9) score += 0;
-    else if (periodS < 12) score += 1;
-    else score += 2;
+    if (periodS < 6) periodAdj = -1;
+    else if (periodS < 9) periodAdj = 0;
+    else if (periodS < 12) periodAdj = 1;
+    else periodAdj = 2;
+    score += periodAdj;
   }
 
   // wind speed
   if (windMph != null) {
-    if (windMph <= 5) score += 2;
-    else if (windMph <= 10) score += 1;
-    else if (windMph <= 15) score -= 1;
-    else score -= 3;
+    if (windMph <= 5) windSpeedAdj = 2;
+    else if (windMph <= 10) windSpeedAdj = 1;
+    else if (windMph <= 15) windSpeedAdj = -1;
+    else windSpeedAdj = -3;
+    score += windSpeedAdj;
   }
 
   // wind direction
-  score += windDirBonus;
+  score += windDirAdj;
 
-  score = Math.max(1, Math.min(10, score));
+  const totalBeforeClamp = score;
+  const totalClamped = Math.max(1, Math.min(10, score));
+  score = totalClamped;
 
   let status = "Rideable";
   if (score >= 8) status = "Clean";
@@ -92,7 +112,20 @@ export function scoreSurf10({
 
   const take = parts.length ? `Current: ${parts.join(" • ")}.` : "Current conditions loaded.";
 
-  return { score10: score, status, take };
+  return {
+    score10: score,
+    status,
+    take,
+    breakdown: {
+      base,
+      wave: waveAdj,
+      period: periodAdj,
+      windSpeed: windSpeedAdj,
+      windDir: windDirAdj,
+      totalBeforeClamp,
+      totalClamped,
+    },
+  };
 }
 
 export function bestWindow2h({

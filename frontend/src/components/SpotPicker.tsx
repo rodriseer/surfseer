@@ -1,3 +1,4 @@
+// src/components/SpotPicker.tsx (UPDATED)
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
@@ -21,18 +22,18 @@ export default function SpotPicker() {
   const current = getSpotFromPath(pathname);
 
   return (
-    <div className="flex items-center gap-2">
-      <label htmlFor="spot" className="text-xs font-semibold text-white/60">
+    <div className="flex items-center gap-2 w-full">
+      <label htmlFor="spot" className="text-xs font-semibold text-white/60 shrink-0">
         Spot
       </label>
 
-      <div className="relative">
+      <div className="relative w-full">
         <select
           id="spot"
           value={current}
           onChange={(e) => router.push(`/spot/${e.target.value}`)}
-          className="appearance-none glass soft-shadow rounded-2xl border border-cyan-200/15
-                     bg-cyan-500/10 px-4 py-2 pr-10 text-sm font-semibold text-white
+          className="w-full appearance-none glass soft-shadow rounded-2xl border border-cyan-200/15
+                     bg-cyan-500/10 px-4 py-3 pr-10 text-base sm:text-sm font-semibold text-white
                      outline-none focus:ring-2 focus:ring-cyan-300/30"
         >
           {Object.values(SPOTS).map((s) => (

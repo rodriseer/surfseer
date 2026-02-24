@@ -1,6 +1,6 @@
-// app/page.tsx
-import { redirect } from "next/navigation";
+// src/app/page.tsx
+import HomeRedirect from "@/components/HomeRedirect";
 
 export default function HomePage() {
-  redirect("/spot/oc-inlet");
+  return <HomeRedirect fallbackSpotId="oc-inlet" />;
 }

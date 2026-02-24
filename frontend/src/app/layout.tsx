@@ -1,7 +1,13 @@
-// app/layout.tsx
+// src/app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
+import TopNav from "@/components/TopNav";
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: "SurfSeer",
@@ -19,30 +25,6 @@ export const metadata: Metadata = {
     description: "Ocean City + Assateague surf conditions & forecast.",
   },
 };
-
-function TopNav() {
-  return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-black/20 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <a href="/spot/oc-inlet" className="text-sm font-extrabold tracking-wide text-white/90">
-          SurfSeer
-        </a>
-
-        <nav className="flex items-center gap-5 text-sm font-semibold text-white/70">
-          <a className="hover:text-white transition" href="/gear">
-            Gear
-          </a>
-          <a className="hover:text-white transition" href="/etiquette">
-            Etiquette
-          </a>
-          <a className="hover:text-white transition" href="/about">
-            About
-          </a>
-        </nav>
-      </div>
-    </header>
-  );
-}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
