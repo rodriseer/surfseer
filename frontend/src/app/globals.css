@@ -10,17 +10,31 @@
     linear-gradient(135deg, #04121c 0%, #0a1f2e 45%, #06293d 100%);
 }
 
-/* Optional: smoother font rendering */
+/* Base document styling */
 html, body {
   text-rendering: optimizeLegibility;
+  background: #04121c;
+  overflow-x: hidden;
 }
 
-/* --- Apple-ish, but ocean-tinted glass --- */
+select, input, button, textarea {
+  font: inherit;
+}
+
+/* ---------- Glass system ---------- */
+
 .glass {
   background: rgba(10, 60, 90, 0.35);
   border: 1px solid rgba(120, 200, 255, 0.16);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
+}
+
+.glass-lite {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .soft-shadow {
@@ -42,35 +56,28 @@ html, body {
   to   { opacity: 1; transform: translateY(0px); }
 }
 
-/* --- Surf accent helpers (optional utility-ish classes) --- */
-.surf-ring:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
-}
+/* ---------- Links + focus ---------- */
 
 .surf-link {
   color: rgba(56, 189, 248, 0.95);
 }
+
 .surf-link:hover {
   color: rgba(125, 211, 252, 1);
 }
 
-/* Make form controls not look “raw browser” */
-select, input, button, textarea {
-  font: inherit;
+.surf-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
 }
 
-/* =========================================================
-   SurfSeer Effects: shimmer (same vibe, clearly moving)
-   ========================================================= */
+/* ---------- Surf shimmer overlay ---------- */
 
-/* Add this as an overlay div: <div className="surf-shimmer" /> */
 .surf-shimmer {
   position: fixed;
   inset: -40%;
   pointer-events: none;
-
-  opacity: 0.85;
+  opacity: 0.55;
   mix-blend-mode: overlay;
 
   background:
@@ -79,29 +86,18 @@ select, input, button, textarea {
     radial-gradient(1200px 800px at 50% 80%, rgba(0, 60, 110, 0.8), transparent 75%),
     radial-gradient(900px 600px at 20% 70%, rgba(0, 180, 200, 0.5), transparent 70%);
 
-  /* keeps your look but makes motion easier to perceive */
-  filter: contrast(112%) saturate(118%);
+  filter: contrast(110%) saturate(115%);
   will-change: transform;
   transform: translateZ(0);
-
-  /* changed to continuous drift (more noticeable than ease+alternate) */
   animation: oceanDrift 10s linear infinite;
 }
 
 @keyframes oceanDrift {
-  0% {
-    transform: translate3d(-15%, -8%, 0) scale(1.05) rotate(-1deg);
-  }
-  50% {
-    transform: translate3d(10%, 6%, 0) scale(1.1) rotate(1deg);
-  }
-  100% {
-    transform: translate3d(-10%, -5%, 0) scale(1.07) rotate(-0.5deg);
-  }
+  0%   { transform: translate3d(-15%, -8%, 0) scale(1.05) rotate(-1deg); }
+  50%  { transform: translate3d(10%, 6%, 0) scale(1.10) rotate(1deg); }
+  100% { transform: translate3d(-10%, -5%, 0) scale(1.07) rotate(-0.5deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .surf-shimmer {
-    animation: none;
-  }
+  .surf-shimmer { animation: none; }
 }

@@ -1,14 +1,14 @@
-// src/components/SessionPlannerCard.tsx  (NEW FILE)
+// src/components/SessionPlannerCard.tsx
 type PlanLevel = "GO" | "MAYBE" | "SKIP";
 
 function planFromScore(score: number | null): { level: PlanLevel; headline: string; sub: string } {
   if (typeof score !== "number") {
-    return { level: "MAYBE", headline: "Forecast loading…", sub: "Give it a moment." };
+    return { level: "MAYBE", headline: "Forecast loading", sub: "Give it a moment." };
   }
-  if (score >= 8) return { level: "GO", headline: "Go surf ✅", sub: "This is a strong window." };
-  if (score >= 6) return { level: "GO", headline: "Worth it ✅", sub: "Rideable and likely fun." };
-  if (score >= 4) return { level: "MAYBE", headline: "Maybe 🤔", sub: "Could be okay if you’re nearby." };
-  return { level: "SKIP", headline: "Skip 🚫", sub: "Probably not worth the paddle." };
+  if (score >= 8) return { level: "GO", headline: "Go surf", sub: "This is a strong window." };
+  if (score >= 6) return { level: "GO", headline: "Worth it", sub: "Rideable and likely fun." };
+  if (score >= 4) return { level: "MAYBE", headline: "Maybe", sub: "Could be okay if you’re nearby." };
+  return { level: "SKIP", headline: "Skip", sub: "Probably not worth the paddle." };
 }
 
 function pillClasses(level: PlanLevel) {
@@ -31,8 +31,8 @@ export default function SessionPlannerCard(props: {
   waveFt: number | null;
   periodS: number | null;
   windMph: number | null;
-  windLabel: string | null; // Offshore / Cross / etc.
-  tideLabel: string; // "High 6:12 AM"
+  windLabel: string | null;
+  tideLabel: string;
   beginner: boolean;
 }) {
   const plan = planFromScore(props.score);

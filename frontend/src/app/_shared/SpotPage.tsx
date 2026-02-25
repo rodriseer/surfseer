@@ -39,6 +39,20 @@ function formatHourLabel(s: string) {
   }
 }
 
+function formatWeekday(dateString: string) {
+  try {
+    // Prevent timezone shifting
+    const date = new Date(dateString + "T00:00:00");
+    return date.toLocaleDateString([], {
+      weekday: "long",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return dateString;
+  }
+}
+
 function tideTypeLabel(t: string) {
   if (t === "H") return "High";
   if (t === "L") return "Low";
@@ -257,13 +271,12 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
           <div className="hidden md:block">
             <SpotPicker />
           </div>
-
-          <a
-            href="#today"
-            className="uplift rounded-2xl border border-cyan-300/20 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100 glass hover:bg-cyan-500/15 transition"
-          >
-            Check now
-          </a>
+            <a
+              href="#today"
+              className="uplift surf-ring rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white/90 hover:bg-white/10 transition"
+            >
+              Check now
+            </a>
         </div>
 
         <div className="border-t border-white/10 bg-black/20 px-4 sm:px-6 py-3 backdrop-blur md:hidden">
@@ -295,10 +308,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
                 ) : null}
               </div>
 
-              <div className="mt-2 flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-cyan-300 animate-pulse" />
-                <p className="text-sm text-white/60">Updated: {updated}</p>
-              </div>
+              <p className="mt-2 text-sm text-white/60">Updated: {updated}</p>
             </div>
 
             <div className="sm:text-right">
@@ -327,7 +337,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               </div>
 
               <p className="mt-2 text-sm text-white/80">
-                <span className="font-semibold">{bestUpcoming.date}</span> •{" "}
+                <span className="font-semibold">{formatWeekday(bestUpcoming.date)}</span> •{" "}
                 <span className="font-semibold">{bestUpcoming.bestWindow}</span>
               </p>
 
@@ -508,7 +518,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               {(outlook ?? []).map((d) => (
                 <div key={d.date} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                   <div className="flex items-baseline justify-between gap-3">
-                    <div className="font-extrabold">{d.date}</div>
+                    <div className="font-extrabold">{formatWeekday(d.date)}</div>
                     <div className="text-sm font-semibold text-white/80">
                       {d.score_best != null ? d.score_best.toFixed(1) : "—"} / 10
                     </div>
@@ -545,7 +555,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               <table className="w-full text-left text-sm">
                 <thead className="text-white/70">
                   <tr className="border-b border-white/10">
-                    <th className="py-3 pr-4 font-semibold">Date</th>
+                    <th className="py-3 pr-4 font-semibold">Day</th>
                     <th className="py-3 pr-4 font-semibold">Best window</th>
                     <th className="py-3 pr-4 font-semibold">Score</th>
                     <th className="py-3 pr-4 font-semibold">Wave</th>
@@ -558,18 +568,14 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
                 <tbody className="text-white/85">
                   {(outlook ?? []).map((d) => (
                     <tr key={d.date} className="border-b border-white/10">
-                      <td className="py-3 pr-4 whitespace-nowrap">{d.date}</td>
+                      <td className="py-3 pr-4 whitespace-nowrap">{formatWeekday(d.date)}</td>
                       <td className="py-3 pr-4 whitespace-nowrap">{d.best_window_label ?? "—"}</td>
                       <td className="py-3 pr-4 font-extrabold">
                         {d.score_best != null ? d.score_best.toFixed(1) : "—"}
                       </td>
-                      <td className="py-3 pr-4">
-                        {d.wave_ft != null ? `${d.wave_ft.toFixed(1)} ft` : "—"}
-                      </td>
+                      <td className="py-3 pr-4">{d.wave_ft != null ? `${d.wave_ft.toFixed(1)} ft` : "—"}</td>
                       <td className="py-3 pr-4">{d.period_s != null ? `${d.period_s}s` : "—"}</td>
-                      <td className="py-3 pr-4">
-                        {d.wind_max_mph != null ? `${d.wind_max_mph} mph` : "—"}
-                      </td>
+                      <td className="py-3 pr-4">{d.wind_max_mph != null ? `${d.wind_max_mph} mph` : "—"}</td>
                       <td className="py-3 pr-0">
                         {d.temp_min_f != null && d.temp_max_f != null
                           ? `${Math.round(d.temp_min_f)}–${Math.round(d.temp_max_f)}°F`
