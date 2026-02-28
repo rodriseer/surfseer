@@ -78,7 +78,7 @@ function dateKey(isoTime: string) {
   return d.includes("T") ? d.split("T")[0] : d.slice(0, 10);
 }
 
-/* ----------------- simple TTL cache ----------------- */
+/* ----------------- simple TTL cache (extra layer) ----------------- */
 
 const TTL_MS = 1000 * 60 * 20;
 const stormCache = new Map<string, { ts: number; data: TodayData }>();
@@ -126,9 +126,10 @@ async function fetchStormglassPoint(lat: number, lon: number) {
 
   const url = `https://api.stormglass.io/v2/weather/point?${params.toString()}`;
 
+  // ✅ Cache for 10 minutes to avoid burning calls in production
   const res = await fetch(url, {
     headers: { Authorization: key },
-    cache: "no-store",
+    next: { revalidate: 600 },
   });
 
   let json: any = null;
@@ -137,8 +138,7 @@ async function fetchStormglassPoint(lat: number, lon: number) {
   } catch {}
 
   if (!res.ok) {
-    const msg =
-      json?.errors?.[0]?.message ?? json?.message ?? `Stormglass request failed (${res.status})`;
+    const msg = json?.errors?.[0]?.message ?? json?.message ?? `Stormglass request failed (${res.status})`;
     throw new Error(msg);
   }
 
@@ -172,8 +172,7 @@ async function fetchStormglassPointCached(lat: number, lon: number) {
   } catch {}
 
   if (!res.ok) {
-    const msg =
-      json?.errors?.[0]?.message ?? json?.message ?? `Stormglass request failed (${res.status})`;
+    const msg = json?.errors?.[0]?.message ?? json?.message ?? `Stormglass request failed (${res.status})`;
     throw new Error(msg);
   }
 
@@ -208,7 +207,8 @@ async function fetchTemps3Day(lat: number, lon: number) {
   url.searchParams.set("daily", "temperature_2m_max,temperature_2m_min");
   url.searchParams.set("forecast_days", "3");
 
-  const res = await fetch(url.toString(), { cache: "no-store" });
+  // ✅ Temps can be cached longer
+  const res = await fetch(url.toString(), { next: { revalidate: 3600 } }); // 1 hour
   if (!res.ok) return [];
 
   const j = await res.json();
@@ -232,7 +232,7 @@ async function fetchTemps5Day(lat: number, lon: number) {
   url.searchParams.set("daily", "temperature_2m_max,temperature_2m_min");
   url.searchParams.set("forecast_days", "5");
 
-  const res = await fetch(url.toString(), { cache: "no-store" });
+  const res = await fetch(url.toString(), { next: { revalidate: 3600 } }); // 1 hour
   if (!res.ok) return [];
 
   const j = await res.json();
@@ -335,11 +335,7 @@ export async function fetchToday(lat: number, lon: number): Promise<TodayData> {
   return data;
 }
 
-export async function fetchOutlook5d(
-  lat: number,
-  lon: number,
-  beachFacingDeg: number
-): Promise<OutlookDay[]> {
+export async function fetchOutlook5d(lat: number, lon: number, beachFacingDeg: number): Promise<OutlookDay[]> {
   let hours: StormglassHour[] = [];
   try {
     hours = await fetchStormglassPointCached(lat, lon);
@@ -404,8 +400,7 @@ export async function fetchOutlook5d(
     const bestStart = best ? points[best.i].time : null;
     const bestEnd = best ? points[best.i + 1].time : null;
 
-    const bestLabel =
-      bestStart && bestEnd ? `${hourLabelNY(bestStart)}–${hourLabelNY(bestEnd)}` : null;
+    const bestLabel = bestStart && bestEnd ? `${hourLabelNY(bestStart)}–${hourLabelNY(bestEnd)}` : null;
 
     const rep = best ? points[best.i] : null;
 
@@ -456,7 +451,8 @@ export async function fetchTideNOAA(station: string): Promise<TideData> {
   url.searchParams.set("begin_date", begin);
   url.searchParams.set("end_date", end);
 
-  const res = await fetch(url.toString(), { cache: "no-store" });
+  // ✅ Cache NOAA tides for 10 minutes
+  const res = await fetch(url.toString(), { next: { revalidate: 600 } });
   if (!res.ok) return { station, tides: [] };
 
   const j = await res.json();

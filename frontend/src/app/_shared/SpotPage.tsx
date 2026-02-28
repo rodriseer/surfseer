@@ -1,8 +1,4 @@
-// src/app/_shared/SpotPage.tsx  (FULL FILE - decluttered layout)
-//
-// NOTE: This replaces the Metric() grid with ONE “Conditions” block,
-// reduces dividers, and makes secondary blocks use glass-lite (no shadow).
-//
+// src/app/_shared/SpotPage.tsx  (FULL FILE - with background image + header links)
 import Image from "next/image";
 import SpotPicker from "@/components/SpotPicker";
 import ShareButton from "@/components/ShareButton";
@@ -249,114 +245,90 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
 
   return (
     <div className="relative min-h-screen text-white">
-      {/* Background image */}
+      {/* Background image (public/background.png) */}
       <Image
         src="/background.jpg"
         alt="SurfSeer background"
         fill
-        sizes="100vw"
         priority={false}
-        className="object-cover opacity-90"
+        className="object-cover"
       />
-      {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-black/70" />
 
-      {/* Actual page content */}
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-black/60" />
+
+      {/* Content */}
       <div className="relative z-10">
         <header className="sticky top-0 z-40 border-b border-white/10 bg-black/25 backdrop-blur-xl">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-4">
-            {/* Left: Logo + Brand */}
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative">
-                {/* Glow highlight behind logo */}
-                <div className="absolute -inset-2 rounded-2xl bg-cyan-400/15 blur-xl" />
-                <div className="relative rounded-2xl border border-white/10 bg-white/10 p-1.5">
-                  <Image
-                    src="/logo.png"
-                    alt="SurfSeer logo"
-                    width={36}
-                    height={36}
-                    priority
-                    className="rounded-xl"
-                  />
-                </div>
+                <div className="absolute -inset-2 rounded-2xl bg-cyan-400/15 blur-xl opacity-50" />
+                <Image
+                  src="/logo.png"
+                  alt="SurfSeer logo"
+                  width={40}
+                  height={40}
+                  priority
+                  className="relative rounded-xl border border-white/10 bg-white/10 p-1.5"
+                />
               </div>
 
               <div className="leading-tight min-w-0">
-                <p className="text-base font-extrabold tracking-wide bg-gradient-to-r from-cyan-200 to-white/70 bg-clip-text text-transparent">
+                <p className="text-lg font-semibold tracking-tight bg-gradient-to-r from-cyan-300 to-white bg-clip-text text-transparent">
                   SurfSeer
                 </p>
                 <p className="text-xs text-white/60 truncate">{selected.name}</p>
               </div>
             </div>
 
-            {/* Center (desktop): Nav + Spot picker */}
-            <div className="hidden md:flex items-center gap-6">
-              <nav className="flex items-center gap-5 text-sm">
-                <a href="/about" className="surf-link">
+            {/* Right side: links + picker + CTA */}
+            <div className="flex items-center gap-3">
+              <nav className="hidden lg:flex items-center gap-5 text-sm font-semibold text-white/70">
+                <a className="hover:text-white transition" href="/favorites">
+                  Favorites
+                </a>
+                <a className="hover:text-white transition" href="/about">
                   About
                 </a>
-                <a href="/etiquette" className="surf-link">
+                <a className="hover:text-white transition" href="/etiquette">
                   Etiquette
                 </a>
-                <a href="/gear" className="surf-link">
+                <a className="hover:text-white transition" href="/gear">
                   Gear
                 </a>
               </nav>
 
-              <SpotPicker />
-            </div>
+              <div className="hidden md:block">
+                <SpotPicker />
+              </div>
 
-            {/* Right: Primary CTA */}
-            <a
-              href="#today"
-              className="uplift surf-ring rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white/90 hover:bg-white/10 transition"
-            >
-              Check now
-            </a>
+              <a
+                href="#today"
+                className="uplift surf-ring rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white/90 hover:bg-white/10 transition"
+              >
+                Check now
+              </a>
+            </div>
           </div>
 
-          {/* Mobile row: Spot picker + quick links */}
+          {/* Mobile row */}
           <div className="border-t border-white/10 bg-black/20 px-4 sm:px-6 py-3 backdrop-blur md:hidden">
-            <SpotPicker />
-
-            <div className="mt-3 flex items-center gap-3 overflow-x-auto pb-1 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <SpotPicker />
+              </div>
               <a
-                href="/about"
-                className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-white/85 hover:bg-white/10"
+                href="/favorites"
+                className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 hover:bg-white/10 transition"
               >
-                About
-              </a>
-              <a
-                href="/etiquette"
-                className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-white/85 hover:bg-white/10"
-              >
-                Etiquette
-              </a>
-              <a
-                href="/gear"
-                className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-white/85 hover:bg-white/10"
-              >
-                Gear
-              </a>
-              <a
-                href="#outlook"
-                className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-white/85 hover:bg-white/10"
-              >
-                5-day
-              </a>
-              <a
-                href="#extras"
-                className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-white/85 hover:bg-white/10"
-              >
-                Tools
+                Favorites
               </a>
             </div>
           </div>
         </header>
 
-        <main className="mx-auto max-w-6xl px-4 sm:px-6 pb-20 pt-10">
-          {/* Keep ONE strong primary container */}
+        <main className="mx-auto max-w-6xl px-4 sm:px-6 pt-10 pb-36 sm:pb-28">
           <section id="today" className="glass soft-shadow rounded-3xl p-6 sm:p-10 fade-in">
             {/* Top summary */}
             <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
@@ -394,32 +366,8 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               </div>
             </div>
 
-            {/* UI/UX: quick in-page actions (extra things to click, but lightweight) */}
-            <div className="mt-7 flex flex-wrap gap-2">
-              <a
-                href="#outlook"
-                className="uplift rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/85 hover:bg-white/10 transition"
-              >
-                Jump to 5-day outlook
-              </a>
-              <a
-                href="#extras"
-                className="uplift rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/85 hover:bg-white/10 transition"
-              >
-                Wetsuit + Notes
-              </a>
-              <a
-                href="/gear"
-                className="uplift rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/85 hover:bg-white/10 transition"
-              >
-                Surf gear guide
-              </a>
-            </div>
-
-            {/* Keep dividers only between BIG sections */}
             <Divider />
 
-            {/* Optional: best upcoming (lighter, secondary weight) */}
             {bestUpcoming ? (
               <div className="glass-lite rounded-3xl p-5">
                 <div className="flex items-center justify-between gap-3">
@@ -473,7 +421,6 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               />
             </div>
 
-            {/* “Conditions” as ONE quieter block instead of 4 mini cards */}
             <div className="mt-8 glass-lite rounded-3xl p-5">
               <div className="flex items-baseline justify-between gap-3">
                 <h3 className="text-sm font-semibold">Conditions</h3>
@@ -507,7 +454,6 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               </div>
             </div>
 
-            {/* Keep “why score” but make it quieter */}
             {"breakdown" in scored && scored.breakdown ? (
               <details className="mt-8 glass-lite rounded-3xl p-5">
                 <summary className="cursor-pointer select-none text-sm font-semibold">
@@ -568,7 +514,6 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               </details>
             ) : null}
 
-            {/* Best window stays, but secondary weight */}
             <div className="mt-8 glass-lite rounded-3xl p-5">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold">Best window</p>
@@ -588,27 +533,23 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               </p>
             </div>
 
-            {/* Chart: keep, but secondary */}
             <div className="mt-8">
               <div className="glass-lite rounded-3xl p-5">
                 <p className="text-sm font-semibold">Next 12 hours</p>
                 <p className="mt-1 text-xs text-white/60">Score trend</p>
-                <div className="mt-4">
-                  <HourlyChart data={chartData} />
-                </div>
+                <div className="mt-4 min-w-0">
+                    <HourlyChart data={chartData} />
+                  </div>
               </div>
             </div>
 
             <Divider />
 
-            {/* 5-day outlook */}
-            <section id="outlook" className="glass-lite rounded-3xl p-6 sm:p-10">
+            <section className="glass-lite rounded-3xl p-6 sm:p-10">
               <div>
                 <p className="text-xs font-semibold text-white/70">Outlook</p>
                 <h2 className="mt-2 text-xl font-extrabold">Next 5 days</h2>
-                <p className="mt-2 text-sm text-white/70">
-                  Best 2-hour window each day (cached ~30 min).
-                </p>
+                <p className="mt-2 text-sm text-white/70">Best 2-hour window each day (cached ~30 min).</p>
               </div>
 
               <div className="mt-6 space-y-3 md:hidden">
@@ -670,13 +611,9 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
                         <td className="py-3 pr-4 font-extrabold">
                           {d.score_best != null ? d.score_best.toFixed(1) : "—"}
                         </td>
-                        <td className="py-3 pr-4">
-                          {d.wave_ft != null ? `${d.wave_ft.toFixed(1)} ft` : "—"}
-                        </td>
+                        <td className="py-3 pr-4">{d.wave_ft != null ? `${d.wave_ft.toFixed(1)} ft` : "—"}</td>
                         <td className="py-3 pr-4">{d.period_s != null ? `${d.period_s}s` : "—"}</td>
-                        <td className="py-3 pr-4">
-                          {d.wind_max_mph != null ? `${d.wind_max_mph} mph` : "—"}
-                        </td>
+                        <td className="py-3 pr-4">{d.wind_max_mph != null ? `${d.wind_max_mph} mph` : "—"}</td>
                         <td className="py-3 pr-0">
                           {d.temp_min_f != null && d.temp_max_f != null
                             ? `${Math.round(d.temp_min_f)}–${Math.round(d.temp_max_f)}°F`
@@ -689,7 +626,6 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               </div>
             </section>
 
-            {/* Actions */}
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <ShareButton />
               <CopyReportButton
@@ -705,8 +641,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               <SubscribeBox spotId={selected.id} />
             </div>
 
-            {/* Extra tools */}
-            <div id="extras" className="mt-8 space-y-6">
+            <div className="mt-8 space-y-6">
               <div className="glass-lite rounded-3xl p-6">
                 <WetsuitPanel spotId={selected.id as SpotId} />
               </div>
