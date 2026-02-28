@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import TopNav from "@/components/TopNav";
+import MobileDock from "@/components/MobileDock";
 
 export const viewport = {
   width: "device-width",
@@ -39,10 +40,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         {/* Content */}
-        <div className="relative z-10">
+        <div className="relative z-10 pb-24 sm:pb-0">
           <TopNav />
           {children}
         </div>
+
+        {/* Mobile dock */}
+        <MobileDock />
 
         {/* Vercel Analytics */}
         <Analytics />
