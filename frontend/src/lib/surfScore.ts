@@ -23,6 +23,15 @@ export function windQuality(windDirDeg: number, beachFacingDeg: number) {
   return { label: "Onshore", bonus: -2 };
 }
 
+export type SurfScoreConfidence = "high" | "medium" | "low";
+
+export type SpotScoringConfig = {
+  waveSweetMinFt: number;
+  waveSweetMaxFt: number;
+  periodSweetMinS: number;
+  periodSweetMaxS: number;
+};
+
 /**
  * More realistic scoring:
  * - Wave has a sweet spot (2–6ft), too small/too big penalized
@@ -34,11 +43,13 @@ export function scoreSurf10({
   waveFt,
   periodS,
   windDirBonus = 0, // -2..+2 from windQuality
+  config,
 }: {
   windMph: number | null;
   waveFt: number | null;
   periodS: number | null;
   windDirBonus?: number;
+  config?: SpotScoringConfig;
 }) {
   const hasAny = windMph != null || waveFt != null || periodS != null;
   if (!hasAny) {
@@ -70,12 +81,16 @@ export function scoreSurf10({
 
   // ---- Wave height (sweet spot) ----
   if (waveFt != null) {
+    const sweetMin = config?.waveSweetMinFt ?? 2.0;
+    const sweetMax = config?.waveSweetMaxFt ?? 6.0;
+    const highSoft = sweetMax + 2; // where it starts to be clearly too big
+
     if (waveFt < 0.5) waveAdj = -3;
     else if (waveFt < 1.0) waveAdj = -2;
-    else if (waveFt < 2.0) waveAdj = -0.5;
-    else if (waveFt < 4.0) waveAdj = 2.0;
-    else if (waveFt < 6.0) waveAdj = 1.5;
-    else if (waveFt < 8.0) waveAdj = 0.0;
+    else if (waveFt < sweetMin) waveAdj = -0.5;
+    else if (waveFt <= (sweetMin + sweetMax) / 2) waveAdj = 2.0;
+    else if (waveFt <= sweetMax) waveAdj = 1.5;
+    else if (waveFt <= highSoft) waveAdj = 0.0;
     else waveAdj = -1.0;
 
     score += waveAdj;
@@ -83,11 +98,16 @@ export function scoreSurf10({
 
   // ---- Period (sweet spot) ----
   if (periodS != null) {
-    if (periodS < 6) periodAdj = -2.0;
-    else if (periodS < 8) periodAdj = -0.5;
-    else if (periodS < 10) periodAdj = 0.5;
-    else if (periodS < 13) periodAdj = 2.0;
-    else if (periodS < 16) periodAdj = 1.0;
+    const sweetMin = config?.periodSweetMinS ?? 10;
+    const sweetMax = config?.periodSweetMaxS ?? 14;
+    const shortSoft = sweetMin - 2;
+    const longSoft = sweetMax + 2;
+
+    if (periodS < shortSoft) periodAdj = -2.0;
+    else if (periodS < sweetMin) periodAdj = -0.5;
+    else if (periodS < (sweetMin + sweetMax) / 2) periodAdj = 0.5;
+    else if (periodS <= sweetMax) periodAdj = 2.0;
+    else if (periodS <= longSoft) periodAdj = 1.0;
     else periodAdj = 0.5;
 
     score += periodAdj;
@@ -128,17 +148,62 @@ export function scoreSurf10({
   else if (totalClamped >= 4) status = "Fair";
   else status = "Poor";
 
+  // ---- Confidence heuristic ----
+  let confidence: SurfScoreConfidence = "low";
+  const haveWave = waveFt != null;
+  const havePeriod = periodS != null;
+  const haveWind = windMph != null;
+
+  if (haveWave && havePeriod && haveWind) confidence = "high";
+  else if ((haveWave && havePeriod) || (haveWave && haveWind) || (havePeriod && haveWind)) {
+    confidence = "medium";
+  }
+
+  // ---- Human-readable take, based on adjustments ----
+  const pieces: string[] = [];
+
+  if (haveWave) {
+    if (waveAdj >= 1.5) pieces.push("wave height is in a sweet spot for this spot");
+    else if (waveAdj > 0) pieces.push("wave height is workable but not perfect");
+    else if (waveAdj <= -2) pieces.push("waves are mostly too small or too big to shine");
+    else pieces.push("wave height is okay but not doing the heavy lifting");
+  }
+
+  if (havePeriod) {
+    if (periodAdj >= 2) pieces.push("period is strong, adding good push to the sets");
+    else if (periodAdj > 0) pieces.push("period has some energy but isn&apos;t classic groundswell");
+    else if (periodAdj <= -2) pieces.push("short period is making things weaker and choppier");
+    else pieces.push("period is middling and not a big factor either way");
+  }
+
+  if (haveWind) {
+    if (windSpeedAdj > 0.8) pieces.push("light wind is keeping things clean");
+    else if (windSpeedAdj > 0) pieces.push("light breeze shouldn&apos;t hurt much");
+    else if (windSpeedAdj < -2) pieces.push("strong wind is adding a lot of bump and texture");
+    else if (windSpeedAdj < 0) pieces.push("wind is starting to hurt shape a bit");
+  }
+
+  if (windDirAdj !== 0) {
+    if (windDirAdj > 0) pieces.push("wind direction is generally helping the shape");
+    else pieces.push("wind direction is fighting the banks and shape");
+  }
+
   const parts: string[] = [];
   if (waveFt != null && periodS != null) parts.push(`${waveFt.toFixed(1)} ft @ ${Math.round(periodS)}s`);
   else if (waveFt != null) parts.push(`${waveFt.toFixed(1)} ft`);
   if (windMph != null) parts.push(`${Math.round(windMph)} mph wind`);
 
-  const take = parts.length ? `Current: ${parts.join(" • ")}.` : "Current conditions loaded.";
+  const conditionsLine = parts.length ? `Current: ${parts.join(" • ")}.` : "Current conditions loaded.";
+  const explanation =
+    pieces.length > 0
+      ? `${conditionsLine} ${pieces.join(" ")}`
+      : conditionsLine;
 
   return {
     score10: totalClamped,
     status,
-    take,
+    take: explanation,
+    confidence,
     breakdown: {
       base,
       wave: waveAdj,
@@ -159,11 +224,13 @@ export function bestWindow2h({
   waveFt,
   periodS,
   beachFacingDeg,
+  config,
 }: {
   hourly: Array<{ time: string; windMph: number | null; windDirDeg: number | null }>;
   waveFt: number | null;
   periodS: number | null;
   beachFacingDeg: number;
+  config?: SpotScoringConfig;
 }) {
   if (!Array.isArray(hourly) || hourly.length < 2) return null;
 
@@ -183,8 +250,8 @@ export function bestWindow2h({
         ? windQuality(b.windDirDeg, beachFacingDeg).bonus
         : 0;
 
-    const sA = scoreSurf10({ windMph: a.windMph, waveFt, periodS, windDirBonus: aBonus }).score10;
-    const sB = scoreSurf10({ windMph: b.windMph, waveFt, periodS, windDirBonus: bBonus }).score10;
+    const sA = scoreSurf10({ windMph: a.windMph, waveFt, periodS, windDirBonus: aBonus, config }).score10;
+    const sB = scoreSurf10({ windMph: b.windMph, waveFt, periodS, windDirBonus: bBonus, config }).score10;
 
     if (typeof sA !== "number" || typeof sB !== "number") continue;
 

@@ -22,37 +22,37 @@ export default function HomePage() {
             <div className="flex flex-col gap-7 sm:gap-9">
               {/* Brand row */}
               <div className="flex items-start gap-4">
-              <Image
-                src="/logo.png"
-                alt="SurfSeer logo"
-                width={48}
-                height={48}
-                priority
-                className="rounded-2xl border border-white/10 bg-white/10 p-2 shrink-0"
-              />
+                <Image
+                  src="/logo.png"
+                  alt="SurfSeer logo"
+                  width={48}
+                  height={48}
+                  priority
+                  className="rounded-2xl border border-white/10 bg-white/10 p-2 shrink-0"
+                />
 
-              {/* CRITICAL: allow text column to shrink + wrap */}
-              <div className="min-w-0 w-full">
-                <p className="text-sm font-semibold text-white/70">SurfCheckSeer</p>
+                {/* Brand + hero copy */}
+                <div className="min-w-0 w-full">
+                  <p className="text-sm font-semibold text-white/70">SurfSeer</p>
 
-                <h1
-                  className="
-                    mt-1
-                    font-extrabold tracking-tight gradient-text
-                    text-3xl sm:text-4xl lg:text-5xl
-                    leading-[1.08]
-                    w-full max-w-[52rem]
-                    whitespace-normal break-words
-                    overflow-hidden
-                  "
-                >
-                  East Coast Surf Forecast
-                </h1>
+                  <h1
+                    className="
+                      mt-1
+                      font-extrabold tracking-tight gradient-text
+                      text-3xl sm:text-4xl lg:text-5xl
+                      leading-[1.08]
+                      w-full max-w-[52rem]
+                      whitespace-normal break-words
+                      overflow-hidden
+                    "
+                  >
+                    East Coast surf calls you can trust
+                  </h1>
+                </div>
               </div>
-            </div>
 
               <p className="max-w-2xl text-sm sm:text-base muted leading-7">
-                Real-time surf scoring, best 2-hour windows, tide timing, and a clean 5-day outlook
+                Stormglass + NOAA + a transparent 0–10 surf score, so you can decide in seconds if it&apos;s worth paddling out.
               </p>
 
               {/* Primary actions */}
@@ -104,29 +104,29 @@ export default function HomePage() {
             <div className="card p-7 sm:p-9">
               <h2 className="section-title">Built like a real forecasting engine</h2>
               <p className="mt-2 text-sm muted leading-7 max-w-3xl">
-                SurfCheckSeer aggregates marine + wind + tide inputs, scores conditions with a weighted model,
-                and caches forecasts to stay fast and stable.
+                SurfSeer aggregates marine, wind, and tide inputs, scores conditions with a weighted model,
+                and caches forecasts so spot pages stay fast and stable.
               </p>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <div className="card-lite p-4">
                   <p className="text-sm font-semibold">Real-time data aggregation</p>
                   <p className="mt-1 text-sm muted leading-6">
-                    Multiple sources with server endpoints and caching to reduce latency and API load.
+                    Stormglass, NOAA, and Open-Meteo combined into one clean, surfer-first forecast.
                   </p>
                 </div>
 
                 <div className="card-lite p-4">
                   <p className="text-sm font-semibold">Weighted surf scoring algorithm</p>
                   <p className="mt-1 text-sm muted leading-6">
-                    Wave height, period, and wind alignment produce a consistent 0–10 score.
+                    Wave height, period, and wind alignment roll into a transparent 0–10 score with a clear breakdown.
                   </p>
                 </div>
 
                 <div className="card-lite p-4">
                   <p className="text-sm font-semibold">Server-side caching</p>
                   <p className="mt-1 text-sm muted leading-6">
-                    TTL-based caching reduces external calls and keeps spot pages snappy.
+                    Smart server-side caching respects API limits and keeps spot pages snappy.
                   </p>
                 </div>
 

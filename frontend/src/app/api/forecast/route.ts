@@ -124,6 +124,7 @@ const data = await singleFlight(`forecast:${selected.id}`, async () => {
     waveFt,
     periodS,
     windDirBonus,
+    config: (selected as any).scoring,
   });
 
   const hourly = hours.slice(idx, idx + 24).map((h: any) => ({
@@ -146,6 +147,7 @@ const data = await singleFlight(`forecast:${selected.id}`, async () => {
     waveFt,
     periodS,
     beachFacingDeg: selected.beachFacingDeg,
+    config: (selected as any).scoring,
   });
 
   const fetchedAtISO = new Date().toISOString();

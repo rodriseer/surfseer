@@ -12,7 +12,13 @@ import WetsuitPanel from "@/components/WetsuitPanel";
 import SpotNotesPanel from "@/components/SpotNotesPanel";
 
 import { fetchToday, fetchTideNOAA, fetchOutlook5d } from "@/lib/surfData";
-import { bestWindow2h, degToCompass, scoreSurf10, windQuality } from "@/lib/surfScore";
+import {
+  bestWindow2h,
+  degToCompass,
+  scoreSurf10,
+  windQuality,
+  type SurfScoreConfidence,
+} from "@/lib/surfScore";
 import { SPOTS, type SpotId } from "@/lib/spots";
 
 const NOAA_TIDE_STATION = "8570283";
@@ -113,6 +119,23 @@ function fmtWind(windMph: number | null) {
   return windMph != null ? `${windMph} mph` : "—";
 }
 
+function confidenceLabel(confidence: SurfScoreConfidence | undefined) {
+  if (!confidence) return "Low confidence";
+  if (confidence === "high") return "High confidence";
+  if (confidence === "medium") return "Medium confidence";
+  return "Low confidence";
+}
+
+function confidencePillClasses(confidence: SurfScoreConfidence | undefined) {
+  if (confidence === "high") {
+    return "bg-emerald-500/15 text-emerald-100 border border-emerald-400/25";
+  }
+  if (confidence === "medium") {
+    return "bg-sky-500/15 text-sky-100 border border-sky-400/25";
+  }
+  return "bg-amber-500/15 text-amber-100 border border-amber-400/25";
+}
+
 /* ---------- component ---------- */
 
 export default async function SpotPage({ spotId }: { spotId: SpotId }) {
@@ -122,7 +145,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
   const [today, tide, outlook] = await Promise.all([
     fetchToday(selected.lat, selected.lon),
     fetchTideNOAA(NOAA_TIDE_STATION),
-    fetchOutlook5d(selected.lat, selected.lon, selected.beachFacingDeg),
+    fetchOutlook5d(selected.lat, selected.lon, selected.beachFacingDeg, (selected as any).scoring),
   ]);
 
   const windMph =
@@ -154,6 +177,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
     waveFt,
     periodS,
     windDirBonus: wq?.bonus ?? 0,
+    config: (selected as any).scoring,
   });
 
   const beginner =
@@ -195,6 +219,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
     waveFt,
     periodS,
     beachFacingDeg: selected.beachFacingDeg,
+    config: (selected as any).scoring,
   });
 
   const window2h = window2hRaw
@@ -220,6 +245,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
       waveFt: hwave,
       periodS: hperiod,
       windDirBonus: hq?.bonus ?? 0,
+      config: (selected as any).scoring,
     });
 
     return {
@@ -361,13 +387,25 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
                     </div>
                   </div>
 
-                  <div className="hidden sm:block text-left">
+                  <div className="hidden sm:flex flex-col items-start text-left gap-1.5">
                     <div className={`chip ${pill}`}>{surf.status}</div>
-                    <div className="mt-2 text-xs text-white/60">Updated: {updated}</div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-white/60">Updated: {updated}</span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${confidencePillClasses(
+                          (scored as any).confidence,
+                        )}`}
+                      >
+                        {confidenceLabel((scored as any).confidence)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 <p className="sm:hidden mt-3 text-xs text-white/60">Updated: {updated}</p>
+                <p className="sm:hidden mt-1 text-[11px] text-white/65">
+                  {confidenceLabel((scored as any).confidence)}
+                </p>
               </div>
             </div>
 

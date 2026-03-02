@@ -1,6 +1,6 @@
 // frontend/src/lib/surfData.ts
 
-import { scoreSurf10, windQuality } from "@/lib/surfScore";
+import { scoreSurf10, windQuality, type SpotScoringConfig } from "@/lib/surfScore";
 
 export type TodayData = {
   updated: string;
@@ -335,7 +335,12 @@ export async function fetchToday(lat: number, lon: number): Promise<TodayData> {
   return data;
 }
 
-export async function fetchOutlook5d(lat: number, lon: number, beachFacingDeg: number): Promise<OutlookDay[]> {
+export async function fetchOutlook5d(
+  lat: number,
+  lon: number,
+  beachFacingDeg: number,
+  config?: SpotScoringConfig,
+): Promise<OutlookDay[]> {
   let hours: StormglassHour[] = [];
   try {
     hours = await fetchStormglassPointCached(lat, lon);
@@ -374,6 +379,7 @@ export async function fetchOutlook5d(lat: number, lon: number, beachFacingDeg: n
         waveFt: ww.wave_ft,
         periodS: ww.period_s,
         windDirBonus: bonus,
+        config,
       });
 
       return {

@@ -7,6 +7,12 @@ export const SPOTS = {
     lat: 38.3287,
     lon: -75.0913,
     beachFacingDeg: 90,
+    scoring: {
+      waveSweetMinFt: 2.0,
+      waveSweetMaxFt: 5.0,
+      periodSweetMinS: 9,
+      periodSweetMaxS: 13,
+    },
     notes: {
       waveType: "Inlet / jetty + sandbar",
       bestSwell: "NE–E",
@@ -22,6 +28,12 @@ export const SPOTS = {
     lat: 38.4066,
     lon: -75.057,
     beachFacingDeg: 85,
+    scoring: {
+      waveSweetMinFt: 2.0,
+      waveSweetMaxFt: 5.0,
+      periodSweetMinS: 8,
+      periodSweetMaxS: 12,
+    },
     notes: {
       waveType: "Beach break",
       bestSwell: "E–SE (depends on bars)",
@@ -37,6 +49,12 @@ export const SPOTS = {
     lat: 38.0534,
     lon: -75.2443,
     beachFacingDeg: 110,
+    scoring: {
+      waveSweetMinFt: 3.0,
+      waveSweetMaxFt: 6.0,
+      periodSweetMinS: 9,
+      periodSweetMaxS: 13,
+    },
     notes: {
       waveType: "Wild beach break",
       bestSwell: "E–SE",
@@ -52,6 +70,12 @@ export const SPOTS = {
     lat: 38.3365,
     lon: -75.0849,
     beachFacingDeg: 90,
+    scoring: {
+      waveSweetMinFt: 2.0,
+      waveSweetMaxFt: 5.0,
+      periodSweetMinS: 9,
+      periodSweetMaxS: 13,
+    },
   },
 
   "indian-river-inlet": {
@@ -60,6 +84,12 @@ export const SPOTS = {
     lat: 38.6143,
     lon: -75.0674,
     beachFacingDeg: 90,
+    scoring: {
+      waveSweetMinFt: 2.5,
+      waveSweetMaxFt: 6.0,
+      periodSweetMinS: 9,
+      periodSweetMaxS: 13,
+    },
   },
   "virginia-beach": {
     id: "virginia-beach",
@@ -67,6 +97,12 @@ export const SPOTS = {
     lat: 36.8529,
     lon: -75.978,
     beachFacingDeg: 80,
+    scoring: {
+      waveSweetMinFt: 2.0,
+      waveSweetMaxFt: 5.5,
+      periodSweetMinS: 8,
+      periodSweetMaxS: 12,
+    },
   },
   "cape-may": {
     id: "cape-may",
@@ -74,6 +110,12 @@ export const SPOTS = {
     lat: 38.9351,
     lon: -74.906,
     beachFacingDeg: 110,
+    scoring: {
+      waveSweetMinFt: 2.5,
+      waveSweetMaxFt: 6.0,
+      periodSweetMinS: 9,
+      periodSweetMaxS: 13,
+    },
   },
   "outer-banks": {
     id: "outer-banks",
@@ -81,6 +123,12 @@ export const SPOTS = {
     lat: 35.5585,
     lon: -75.4665,
     beachFacingDeg: 90,
+    scoring: {
+      waveSweetMinFt: 3.0,
+      waveSweetMaxFt: 7.0,
+      periodSweetMinS: 9,
+      periodSweetMaxS: 14,
+    },
   },
   "wrightsville-beach": {
     id: "wrightsville-beach",
@@ -88,6 +136,12 @@ export const SPOTS = {
     lat: 34.2135,
     lon: -77.786,
     beachFacingDeg: 120,
+    scoring: {
+      waveSweetMinFt: 2.0,
+      waveSweetMaxFt: 5.0,
+      periodSweetMinS: 8,
+      periodSweetMaxS: 12,
+    },
   },
   montauk: {
     id: "montauk",
@@ -95,6 +149,12 @@ export const SPOTS = {
     lat: 41.0359,
     lon: -71.9545,
     beachFacingDeg: 165,
+    scoring: {
+      waveSweetMinFt: 3.0,
+      waveSweetMaxFt: 7.0,
+      periodSweetMinS: 10,
+      periodSweetMaxS: 14,
+    },
   },
   "cocoa-beach": {
     id: "cocoa-beach",
@@ -102,6 +162,12 @@ export const SPOTS = {
     lat: 28.32,
     lon: -80.6076,
     beachFacingDeg: 90,
+    scoring: {
+      waveSweetMinFt: 2.0,
+      waveSweetMaxFt: 4.5,
+      periodSweetMinS: 8,
+      periodSweetMaxS: 11,
+    },
   },
   "sebastian-inlet": {
     id: "sebastian-inlet",
@@ -109,6 +175,12 @@ export const SPOTS = {
     lat: 27.8606,
     lon: -80.4473,
     beachFacingDeg: 90,
+    scoring: {
+      waveSweetMinFt: 3.0,
+      waveSweetMaxFt: 6.5,
+      periodSweetMinS: 9,
+      periodSweetMaxS: 13,
+    },
   },
 } as const;
 
