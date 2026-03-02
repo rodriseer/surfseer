@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef } from "react";
 
 const MD_BREAKPOINT = 768;
 
@@ -15,20 +15,21 @@ type Props = {
 
 export default function CollapsibleSection({ title, children, id, summaryHint = "Tap to expand" }: Props) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
-  const [mounted, setMounted] = useState(false);
 
   useLayoutEffect(() => {
-    setMounted(true);
     const el = detailsRef.current;
     if (!el) return;
 
-    const setOpen = () => {
-      el.open = window.innerWidth >= MD_BREAKPOINT;
+    const syncForDesktop = () => {
+      // Only force open on desktop; on mobile leave open/closed to the user (don't force close on resize)
+      if (window.innerWidth >= MD_BREAKPOINT) {
+        el.open = true;
+      }
     };
 
-    setOpen();
-    window.addEventListener("resize", setOpen);
-    return () => window.removeEventListener("resize", setOpen);
+    syncForDesktop();
+    window.addEventListener("resize", syncForDesktop);
+    return () => window.removeEventListener("resize", syncForDesktop);
   }, []);
 
   return (
