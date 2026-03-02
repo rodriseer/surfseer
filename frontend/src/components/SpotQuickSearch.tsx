@@ -27,7 +27,7 @@ export default function SpotQuickSearch() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <div className="relative">
         <input
           value={q}
@@ -39,7 +39,7 @@ export default function SpotQuickSearch() {
           }}
           placeholder="Search spots…"
           className="
-            w-[220px]
+            w-full
             rounded-xl
             border border-white/10
             bg-white/5
@@ -51,13 +51,13 @@ export default function SpotQuickSearch() {
             focus:bg-white/10
           "
         />
-        <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-white/40">
+        <div className="pointer-events-none absolute inset-y-0 right-3 hidden sm:flex items-center text-xs text-white/40">
           /
         </div>
       </div>
 
       {open ? (
-        <div className="absolute right-0 mt-2 w-[320px] overflow-hidden rounded-2xl border border-white/10 bg-black/70 backdrop-blur-xl shadow-[0_20px_60px_-30px_rgba(0,0,0,0.8)]">
+        <div className="absolute left-0 mt-2 w-full z-20 overflow-hidden rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl shadow-[0_20px_60px_-30px_rgba(0,0,0,0.8)]">
           <div className="px-3 py-2 text-xs font-semibold text-white/60 border-b border-white/10">
             Jump to a spot
           </div>
