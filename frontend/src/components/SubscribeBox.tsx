@@ -27,60 +27,61 @@ export default function SubscribeBox({ spotId }: { spotId: string }) {
 
       if (!res.ok || json.ok === false) {
         setStatus("err");
-        setMsg((json as any)?.error?.message ?? "Something went wrong.");
+        setMsg(json.ok === false ? json.error.message : "Something went wrong.");
         return;
       }
 
       setStatus("ok");
-      setMsg("Subscribed. You’ll get the daily report.");
+      setMsg("You’re in. We’ll email you when it’s worth paddling out.");
       setEmail("");
-    } catch (e) {
+    } catch {
       setStatus("err");
-      setMsg(e instanceof Error ? e.message : "Something went wrong.");
+      setMsg("Network error. Try again.");
     }
   }
 
-  const statusStyles =
-    status === "ok"
-      ? "border-white/12 bg-white/6 text-white/80"
-      : status === "err"
-        ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
-        : "border-white/10 bg-white/5 text-white/70";
-
   return (
-    <div className="glass soft-shadow rounded-3xl p-5">
-      <p className="text-sm font-semibold text-white">Daily surf report</p>
-      <p className="mt-1 text-sm text-white/60">
-        One email per day. Ocean City + Assateague.
-      </p>
+    <section className="card-lite p-6 sm:p-7">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <p className="text-sm font-extrabold">Get alerts for this spot</p>
+          <p className="mt-1 text-sm muted leading-6">
+            Simple emails when conditions are good. No spam.
+          </p>
+        </div>
+        <div className="text-xs text-white/60">
+          {status === "loading" ? "Sending…" : status === "ok" ? "Subscribed" : null}
+        </div>
+      </div>
 
-      <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3 sm:flex-row">
+      <form onSubmit={onSubmit} className="mt-5 flex flex-col sm:flex-row gap-3">
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          type="email"
           inputMode="email"
           autoComplete="email"
           placeholder="you@email.com"
-          className="uplift w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20 focus:ring-2 focus:ring-white/10"
-          required
+          className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white placeholder:text-white/45
+                     focus:outline-none focus:ring-2 focus:ring-cyan-300/50"
         />
         <button
           type="submit"
-          disabled={status === "loading"}
-          className="uplift rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white glass hover:bg-white/14 disabled:opacity-60"
+          disabled={status === "loading" || email.trim().length < 5}
+          className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {status === "loading" ? "Joining…" : "Join"}
+          Notify me
         </button>
       </form>
 
-      {status !== "idle" && (
-        <div className={`mt-3 rounded-2xl border p-3 text-sm ${statusStyles}`}>
+      {msg ? (
+        <p className={`mt-3 text-sm ${status === "err" ? "text-rose-200" : "text-emerald-100"}`}>
           {msg}
-        </div>
-      )}
+        </p>
+      ) : null}
 
-      <p className="mt-3 text-xs text-white/45">Unsubscribe anytime.</p>
-    </div>
+      <p className="mt-3 text-xs text-white/60">
+        Tip: this becomes a monetization engine later (local surf shops, gear, reports).
+      </p>
+    </section>
   );
 }

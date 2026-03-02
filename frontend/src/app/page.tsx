@@ -1,11 +1,10 @@
 // src/app/page.tsx
-
 import Image from "next/image";
+import SpotQuickSearch from "@/components/SpotQuickSearch";
 
 export default function HomePage() {
   return (
     <main className="relative min-h-screen w-full overflow-hidden">
-      {/* Background Image (your file is in /public root) */}
       <Image
         src="/silas-hero.jpg"
         alt="Surfer in ocean aerial view"
@@ -14,89 +13,159 @@ export default function HomePage() {
         className="object-cover"
       />
 
-      {/* Dark overlay for readability */}
       <div className="absolute inset-0 bg-black/60" />
 
-      {/* Content Wrapper */}
-      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 py-20 sm:py-28">
-        {/* Hero Card */}
-        <section className="glass soft-shadow rounded-3xl p-10 sm:p-16 text-center backdrop-blur-md">
-          {/* Brand */}
-          <div className="flex flex-col items-center gap-6">
-            <Image
-              src="/logo.png"
-              alt="SurfSeer logo"
-              width={140}
-              height={140}
-              priority
-              className="rounded-3xl"
-            />
+      <div className="relative z-10">
+        <div className="container-app pt-14 sm:pt-20 pb-20">
+          {/* Hero */}
+          <section className="card p-6 sm:p-10 fade-in">
+            <div className="flex flex-col gap-7 sm:gap-9">
+              {/* Brand row */}
+              <div className="flex items-start gap-4">
+              <Image
+                src="/logo.png"
+                alt="SurfSeer logo"
+                width={48}
+                height={48}
+                priority
+                className="rounded-2xl border border-white/10 bg-white/10 p-2 shrink-0"
+              />
 
-            {/* BIG brand name */}
-            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-extrabold tracking-tight text-white">
-              SurfSeer
-            </h1>
+              {/* CRITICAL: allow text column to shrink + wrap */}
+              <div className="min-w-0 w-full">
+                <p className="text-sm font-semibold text-white/70">SurfCheckSeer</p>
 
-            {/* Subtitle */}
-            <h2 className="text-xl sm:text-2xl text-white/80 font-medium">
-              East Coast Surf Forecast
-            </h2>
-
-            <p className="max-w-2xl text-sm sm:text-base text-white/70 leading-7">
-              Real-time surf scoring, best 2-hour windows, wind direction analysis, tide timing,
-              and a clean 5-day outlook.
-            </p>
-          </div>
-
-          {/* Primary CTA */}
-          <div className="mt-12">
-            <a
-              href="/spot/oc-inlet"
-              className="
-                group block w-full sm:w-auto mx-auto
-                rounded-3xl
-                border border-cyan-300/20
-                bg-gradient-to-r from-cyan-500/20 to-sky-500/15
-                px-10 py-7 sm:px-14 sm:py-8
-                text-center
-                transition-all duration-300
-                hover:from-cyan-500/30 hover:to-sky-500/25
-                hover:scale-[1.02]
-                uplift surf-ring
-              "
-            >
-              <div className="flex flex-col items-center gap-3">
-                <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-                  Open Forecast
-                </span>
-                <span className="text-sm sm:text-base text-white/70">
-                  Score • Best window • Wind quality • Tides • 5-day outlook
-                </span>
+                <h1
+                  className="
+                    mt-1
+                    font-extrabold tracking-tight gradient-text
+                    text-3xl sm:text-4xl lg:text-5xl
+                    leading-[1.08]
+                    w-full max-w-[52rem]
+                    whitespace-normal break-words
+                    overflow-hidden
+                  "
+                >
+                  East Coast Surf Forecast
+                </h1>
               </div>
-            </a>
-          </div>
+            </div>
 
-          {/* Secondary Links */}
-          <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
-            <a href="/about" className="surf-link">
-              About
-            </a>
-            <a href="/etiquette" className="surf-link">
-              Etiquette
-            </a>
-            <a href="/gear" className="surf-link">
-              Surf gear
-            </a>
-          </div>
-        </section>
+              <p className="max-w-2xl text-sm sm:text-base muted leading-7">
+                Real-time surf scoring, best 2-hour windows, tide timing, and a clean 5-day outlook
+              </p>
 
-        {/* Footer */}
-        <footer className="mt-20 border-t border-white/10 pt-8 text-sm text-white/60 text-center">
-          © {new Date().getFullYear()} SurfSeer
-        </footer>
+              {/* Primary actions */}
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                <a href="/spot/oc-inlet" className="btn btn-primary">
+                  Open forecast
+                </a>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-semibold text-white/70">Jump to a spot:</span>
+                  <div className="w-[320px] max-w-full">
+                    <SpotQuickSearch />
+                  </div>
+                </div>
+              </div>
+
+              {/* Feature cards */}
+              <div className="grid gap-3 sm:gap-4 sm:grid-cols-3">
+                <div className="card-lite p-5">
+                  <p className="text-xs font-semibold text-white/70">Surf score</p>
+                  <p className="mt-2 text-lg font-extrabold">0–10 rating</p>
+                  <p className="mt-1 text-sm muted leading-6">
+                    Wave height + period + wind alignment distilled into one number you can trust.
+                  </p>
+                </div>
+
+                <div className="card-lite p-5">
+                  <p className="text-xs font-semibold text-white/70">Best window</p>
+                  <p className="mt-2 text-lg font-extrabold">Next 2 hours</p>
+                  <p className="mt-1 text-sm muted leading-6">
+                    Quickly see the cleanest wind window so you don’t waste a session.
+                  </p>
+                </div>
+
+                <div className="card-lite p-5">
+                  <p className="text-xs font-semibold text-white/70">Tides + outlook</p>
+                  <p className="mt-2 text-lg font-extrabold">Today + 5 days</p>
+                  <p className="mt-1 text-sm muted leading-6">
+                    Tide timing for surf spots, plus an easy weekly glance for planning.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* KEEP: Recruiter credibility section */}
+          {/* REMOVE: "Designed for UX, not just data" section */}
+          <section className="mt-10">
+            <div className="card p-7 sm:p-9">
+              <h2 className="section-title">Built like a real forecasting engine</h2>
+              <p className="mt-2 text-sm muted leading-7 max-w-3xl">
+                SurfCheckSeer aggregates marine + wind + tide inputs, scores conditions with a weighted model,
+                and caches forecasts to stay fast and stable.
+              </p>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="card-lite p-4">
+                  <p className="text-sm font-semibold">Real-time data aggregation</p>
+                  <p className="mt-1 text-sm muted leading-6">
+                    Multiple sources with server endpoints and caching to reduce latency and API load.
+                  </p>
+                </div>
+
+                <div className="card-lite p-4">
+                  <p className="text-sm font-semibold">Weighted surf scoring algorithm</p>
+                  <p className="mt-1 text-sm muted leading-6">
+                    Wave height, period, and wind alignment produce a consistent 0–10 score.
+                  </p>
+                </div>
+
+                <div className="card-lite p-4">
+                  <p className="text-sm font-semibold">Server-side caching</p>
+                  <p className="mt-1 text-sm muted leading-6">
+                    TTL-based caching reduces external calls and keeps spot pages snappy.
+                  </p>
+                </div>
+
+                <div className="card-lite p-4">
+                  <p className="text-sm font-semibold">Automated daily reports</p>
+                  <p className="mt-1 text-sm muted leading-6">
+                    Subscription email pipeline for “notify me when it’s good.”
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-7">
+                <a href="/spot/oc-inlet" className="btn btn-primary">
+                  Check forecast now
+                </a>
+              </div>
+            </div>
+          </section>
+
+          {/* Footer */}
+          <footer className="mt-12 border-t border-white/10 pt-8 text-sm muted">
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+              <div>© {new Date().getFullYear()} SurfCheckSeer</div>
+              <div className="flex items-center gap-5">
+                <a href="/about" className="surf-link">
+                  About
+                </a>
+                <a href="/etiquette" className="surf-link">
+                  Etiquette
+                </a>
+                <a href="/gear" className="surf-link">
+                  Gear
+                </a>
+              </div>
+            </div>
+          </footer>
+        </div>
       </div>
 
-      {/* Photo Credit */}
       <div className="absolute bottom-4 right-5 z-10 text-xs text-white/70">
         Photo by{" "}
         <a
