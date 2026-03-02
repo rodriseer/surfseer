@@ -10,6 +10,7 @@ import SessionPlannerCard from "@/components/SessionPlannerCard";
 
 import WetsuitPanel from "@/components/WetsuitPanel";
 import SpotNotesPanel from "@/components/SpotNotesPanel";
+import CollapsibleSection from "@/components/CollapsibleSection";
 
 import { fetchToday, fetchTideNOAA, fetchOutlook5d } from "@/lib/surfData";
 import {
@@ -62,7 +63,7 @@ function tideTypeLabel(t: string) {
 }
 
 function Divider() {
-  return <div className="my-10 h-px w-full bg-white/10" />;
+  return <div className="my-6 md:my-10 h-px w-full bg-white/10" />;
 }
 
 function best2hByScore(points: Array<{ time: string; score: number | null }>) {
@@ -282,7 +283,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
       {/* Content */}
       <div className="relative z-10">
         <header className="sticky top-0 z-40 border-b border-white/10 bg-black/25 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-4">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-3 md:py-4">
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative">
                 <div className="absolute -inset-2 rounded-2xl bg-cyan-400/15 blur-xl opacity-50" />
@@ -350,97 +351,100 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
           </div>
         </header>
 
-        <main className="mx-auto max-w-6xl px-4 sm:px-6 pt-10 pb-36 sm:pb-28">
-          <section id="today" className="card p-6 sm:p-10 fade-in">
-            {/* Top summary */}
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-xs font-semibold text-white/70">Selected spot</p>
-
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <p className="text-2xl font-extrabold">{selected.name}</p>
-
-                  <FavoriteButton spotId={selected.id} />
-
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${pill}`}>
-                    {surf.status}
+        <main className="mx-auto max-w-6xl px-4 sm:px-6 pt-4 pb-24 md:pt-10 md:pb-28">
+          <section id="today" className="card p-4 md:p-8 lg:p-10 fade-in">
+            {/* ----- Mobile-first hero: above-the-fold only ----- */}
+            <div className="flex flex-col gap-4 md:gap-6">
+              {/* Row 1: Spot name + favorite + status (single pill) */}
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl md:text-2xl font-extrabold">{selected.name}</h1>
+                <FavoriteButton spotId={selected.id} />
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${pill}`}>
+                  {surf.status}
+                </span>
+                {beginner ? (
+                  <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold bg-white/10 text-white/80 border border-white/10">
+                    Beginner-friendly
                   </span>
-
-                  {beginner ? (
-                    <span className="rounded-full px-2.5 py-1 text-xs font-bold bg-white/10 text-white/80 border border-white/10">
-                      Beginner-friendly
-                    </span>
-                  ) : null}
-                </div>
-
-                <p className="mt-2 text-sm text-white/60">Updated: {updated}</p>
-                <p className="mt-1 text-sm text-white/65">
-                  {topBestWindowLabel
-                    ? `Best 2-hour window: ${topBestWindowLabel}${
-                        bestScoreWindow ? ` • ~${bestScoreWindow.avg.toFixed(1)}/10` : ""
-                      }`
-                    : "Best 2-hour window: —"}
-                </p>
+                ) : null}
               </div>
 
-              <div className="sm:text-right">
-                <p className="text-xs font-semibold text-white/70">Surf score</p>
-
-                <div className="mt-2 inline-flex items-center justify-end gap-4">
-                  <div className="score-ring flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
-                        {surf.score != null ? surf.score.toFixed(1) : "—"}
-                      </div>
-                      <div className="text-[11px] text-white/60 -mt-1">out of 10</div>
+              {/* Row 2: ONE dominant score (hero) */}
+              <div className="flex items-center gap-4 md:gap-6">
+                <div className="score-ring flex items-center justify-center w-20 h-20 md:w-[110px] md:h-[110px] shrink-0">
+                  <div className="text-center">
+                    <div className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-white">
+                      {surf.score != null ? surf.score.toFixed(1) : "—"}
                     </div>
-                  </div>
-
-                  <div className="hidden sm:flex flex-col items-start text-left gap-1.5">
-                    <div className={`chip ${pill}`}>{surf.status}</div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs text-white/60">Updated: {updated}</span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${confidencePillClasses(
-                          (scored as any).confidence,
-                        )}`}
-                      >
-                        {confidenceLabel((scored as any).confidence)}
-                      </span>
-                    </div>
+                    <div className="text-[10px] md:text-[11px] text-white/60 -mt-0.5">out of 10</div>
                   </div>
                 </div>
+                <div className="min-w-0">
+                  <p className="text-sm md:text-base font-semibold text-white/90">
+                    {surf.status} conditions
+                  </p>
+                  <p className="mt-0.5 text-xs text-white/55">
+                    {topBestWindowLabel
+                      ? `Best window ${topBestWindowLabel}`
+                      : "Best window —"}
+                  </p>
+                  <p className="mt-1 text-[11px] text-white/50">Updated {updated}</p>
+                </div>
+              </div>
 
-                <p className="sm:hidden mt-3 text-xs text-white/60">Updated: {updated}</p>
-                <p className="sm:hidden mt-1 text-[11px] text-white/65">
+              {/* Row 3: Compact 2-col stats — wave, period, wind */}
+              <div className="grid grid-cols-2 gap-2 md:gap-3">
+                <div className="rounded-xl bg-white/5 p-3">
+                  <p className="text-[11px] font-semibold text-white/60">Wave</p>
+                  <p className="mt-0.5 text-base md:text-lg font-bold">
+                    {waveFt != null ? `${waveFt.toFixed(1)} ft` : "—"}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/5 p-3">
+                  <p className="text-[11px] font-semibold text-white/60">Period</p>
+                  <p className="mt-0.5 text-base md:text-lg font-bold">
+                    {periodS != null ? `${periodS.toFixed(0)}s` : "—"}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/5 p-3 col-span-2">
+                  <p className="text-[11px] font-semibold text-white/60">Wind</p>
+                  <p className="mt-0.5 text-base md:text-lg font-bold">
+                    {windMph != null && windDir
+                      ? `${windMph} mph ${windDir}`
+                      : windMph != null
+                        ? `${windMph} mph`
+                        : "—"}
+                  </p>
+                  {wq?.label ? (
+                    <p className="mt-0.5 text-[11px] text-white/55">{wq.label}</p>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Desktop: show confidence and duplicate summary line only on md+ */}
+              <div className="hidden md:flex flex-wrap items-center gap-2 text-xs text-white/60">
+                <span
+                  className={`rounded-full px-2 py-0.5 font-semibold ${confidencePillClasses(
+                    (scored as any).confidence,
+                  )}`}
+                >
                   {confidenceLabel((scored as any).confidence)}
-                </p>
+                </span>
+                <span>Updated {updated}</span>
               </div>
             </div>
 
             <Divider />
 
-            {/* Why this score */}
-            <div className="card-lite p-5 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold">Why this score</p>
-                  <p className="mt-1 text-sm muted leading-6">
-                    Transparency builds trust. Here’s what drove today’s rating.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <a href="#hourly" className="btn-ghost text-xs px-3 py-2">
-                    Hourly
-                  </a>
-                  <a href="#tides" className="btn-ghost text-xs px-3 py-2">
-                    Tides
-                  </a>
-                </div>
+            {/* Why this score — collapsible on mobile */}
+            <CollapsibleSection title="Why this score" id="why" summaryHint="Tap to expand">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 flex-wrap">
+                <a href="#hourly" className="btn-ghost text-xs px-3 py-2">Hourly</a>
+                <a href="#tides" className="btn-ghost text-xs px-3 py-2">Tides</a>
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-2xl bg-white/5 p-4">
                   <p className="text-xs font-semibold text-white/70">Wave height</p>
                   <p className="mt-1 text-lg font-extrabold">
@@ -476,7 +480,7 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2 sm:grid-cols-2">
                 <div className="rounded-2xl bg-white/5 p-4">
                   <p className="text-xs font-semibold text-white/70">Best 2-hour window</p>
                   <p className="mt-1 text-base font-bold">
@@ -498,47 +502,12 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
                 </div>
               </div>
 
-              <p className="mt-5 text-sm text-white/70">
-                {surf.take}
-              </p>
+              <p className="text-sm text-white/70">{surf.take}</p>
             </div>
+            </CollapsibleSection>
 
-            {bestUpcoming ? (
-              <div className="glass-lite rounded-3xl p-5 mt-6">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold">Best this week</p>
-                  <span className="text-xs font-semibold text-white/70">{bestUpcoming.score.toFixed(1)}/10</span>
-                </div>
-
-                <p className="mt-2 text-sm text-white/80">
-                  <span className="font-semibold">{formatWeekday(bestUpcoming.date)}</span> •{" "}
-                  <span className="font-semibold">{bestUpcoming.bestWindow}</span>
-                </p>
-
-                <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-white/75">
-                  <div>
-                    <span className="text-white/60">Wave:</span>{" "}
-                    {bestUpcoming.wave != null ? `${bestUpcoming.wave.toFixed(1)} ft` : "—"}
-                  </div>
-                  <div>
-                    <span className="text-white/60">Period:</span>{" "}
-                    {bestUpcoming.period != null ? `${bestUpcoming.period}s` : "—"}
-                  </div>
-                  <div>
-                    <span className="text-white/60">Wind max:</span>{" "}
-                    {bestUpcoming.windMax != null ? `${bestUpcoming.windMax} mph` : "—"}
-                  </div>
-                  <div>
-                    <span className="text-white/60">Temp:</span>{" "}
-                    {bestUpcoming.tempMin != null && bestUpcoming.tempMax != null
-                      ? `${Math.round(bestUpcoming.tempMin)}–${Math.round(bestUpcoming.tempMax)}°F`
-                      : "—"}
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
-            <div className="mt-6">
+            <CollapsibleSection title="Plan your session" summaryHint="Tap to expand">
+            <div className="mt-0">
               <SessionPlannerCard
                 spotName={selected.name}
                 score={surf.score}
@@ -553,15 +522,12 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
                 beginner={beginner}
               />
             </div>
+            </CollapsibleSection>
 
             {"breakdown" in scored && (scored as any).breakdown ? (
-              <details className="mt-8 glass-lite rounded-3xl p-5">
-                <summary className="cursor-pointer select-none text-sm font-semibold">
-                  Scoring breakdown
-                  <span className="ml-2 text-xs font-semibold text-white/60">(tap)</span>
-                </summary>
-
-                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <CollapsibleSection title="Scoring breakdown" summaryHint="Tap to expand">
+              <div className="mt-0 glass-lite rounded-2xl p-4 md:p-5">
+                <div className="grid grid-cols-2 gap-2 md:gap-3 text-sm">
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <p className="text-xs font-semibold text-white/60">Base</p>
                     <p className="mt-1 text-lg font-extrabold text-white">{(scored as any).breakdown.base.toFixed(1)}</p>
@@ -601,30 +567,41 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
                     <p className="mt-1 text-xs text-white/60">{wq?.label ?? "—"}</p>
                   </div>
                 </div>
-              </details>
+              </div>
+              </CollapsibleSection>
             ) : null}
 
-            {/* Hourly chart with real anchor */}
-            <div id="hourly" className="mt-8">
-              <div className="glass-lite rounded-3xl p-5">
-                <p className="text-sm font-semibold">Next 12 hours</p>
-                <p className="mt-1 text-xs text-white/60">Score trend</p>
-                <div className="mt-4 min-w-0">
-                  <HourlyChart data={chartData} />
+            <CollapsibleSection title="Next 12 hours" id="hourly" summaryHint="Score trend">
+              <div className="min-w-0">
+                <HourlyChart data={chartData} />
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Next 5 days" summaryHint="Tap to expand">
+            <div className="space-y-4">
+              {bestUpcoming ? (
+                <div className="glass-lite rounded-2xl p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold">Best this week</p>
+                    <span className="text-xs font-semibold text-white/70">{bestUpcoming.score.toFixed(1)}/10</span>
+                  </div>
+                  <p className="mt-2 text-sm text-white/80">
+                    <span className="font-semibold">{formatWeekday(bestUpcoming.date)}</span> •{" "}
+                    <span className="font-semibold">{bestUpcoming.bestWindow}</span>
+                  </p>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-white/75">
+                    <div><span className="text-white/60">Wave:</span> {bestUpcoming.wave != null ? `${bestUpcoming.wave.toFixed(1)} ft` : "—"}</div>
+                    <div><span className="text-white/60">Period:</span> {bestUpcoming.period != null ? `${bestUpcoming.period}s` : "—"}</div>
+                    <div><span className="text-white/60">Wind max:</span> {bestUpcoming.windMax != null ? `${bestUpcoming.windMax} mph` : "—"}</div>
+                    <div><span className="text-white/60">Temp:</span> {bestUpcoming.tempMin != null && bestUpcoming.tempMax != null ? `${Math.round(bestUpcoming.tempMin)}–${Math.round(bestUpcoming.tempMax)}°F` : "—"}</div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              ) : null}
 
-            <Divider />
+            <div className="glass-lite rounded-2xl p-4 md:p-6">
+              <p className="text-xs text-white/60 mb-3">Best 2-hour window each day</p>
 
-            <section className="glass-lite rounded-3xl p-6 sm:p-10">
-              <div>
-                <p className="text-xs font-semibold text-white/70">Outlook</p>
-                <h2 className="mt-2 text-xl font-extrabold">Next 5 days</h2>
-                <p className="mt-2 text-sm text-white/70">Best 2-hour window each day (cached ~30 min).</p>
-              </div>
-
-              <div className="mt-6 space-y-3 md:hidden">
+              <div className="space-y-3 md:hidden">
                 {(outlook ?? []).map((d) => (
                   <div key={d.date} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <div className="flex items-baseline justify-between gap-3">
@@ -694,9 +671,11 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
                   </tbody>
                 </table>
               </div>
-            </section>
+            </div>
+            </div>
+            </CollapsibleSection>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-6 md:mt-8 flex flex-col gap-3 sm:flex-row">
               <ShareButton />
               <CopyReportButton
                 spotName={selected.name}
@@ -711,29 +690,21 @@ export default async function SpotPage({ spotId }: { spotId: SpotId }) {
               <SubscribeBox spotId={selected.id} />
             </div>
 
-            <div className="mt-8 glass-lite rounded-3xl p-6">
-              <details className="group">
-                <summary className="cursor-pointer select-none flex items-center justify-between gap-3">
-                  <span className="text-sm font-semibold">Local notes &amp; gear</span>
-                  <span className="text-xs text-white/60 group-open:hidden">Tap to expand</span>
-                  <span className="text-xs text-white/60 hidden group-open:inline">Tap to collapse</span>
-                </summary>
-
-                <div className="mt-5 space-y-5">
-                  <div>
-                    <p className="text-xs font-semibold text-white/70 mb-2">Wetsuit guide</p>
-                    <WetsuitPanel spotId={selected.id as SpotId} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-white/70 mb-2">Spot notes</p>
-                    <SpotNotesPanel spotId={selected.id as SpotId} />
-                  </div>
+            <CollapsibleSection title="Local notes & gear" summaryHint="Tap to expand">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs font-semibold text-white/70 mb-2">Wetsuit guide</p>
+                  <WetsuitPanel spotId={selected.id as SpotId} />
                 </div>
-              </details>
-            </div>
+                <div>
+                  <p className="text-xs font-semibold text-white/70 mb-2">Spot notes</p>
+                  <SpotNotesPanel spotId={selected.id as SpotId} />
+                </div>
+              </div>
+            </CollapsibleSection>
           </section>
 
-          <footer className="mt-16 border-t border-white/10 pt-8 text-sm text-white/60">
+          <footer className="mt-10 md:mt-16 border-t border-white/10 pt-6 md:pt-8 text-xs md:text-sm text-white/60">
             © {new Date().getFullYear()} SurfSeer
           </footer>
         </main>
