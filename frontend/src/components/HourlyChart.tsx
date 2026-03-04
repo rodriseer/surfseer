@@ -1,8 +1,14 @@
 "use client";
 
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from "recharts";
+import { ResponsiveContainer, AreaChart, Area, Line, XAxis, YAxis, Tooltip } from "recharts";
 
 type Point = { time: string; waveHeightFt: number | null; score: number | null };
+
+const OCEAN_COLORS = {
+  deep: "#0c4a6e",
+  teal: "#0d9488",
+  sand: "#99a3a8",
+};
 
 type TooltipPayloadItem = {
   dataKey?: string;
@@ -59,7 +65,19 @@ export default function HourlyChart({ data }: { data: Point[] }) {
 
       <div className="h-44">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={cleaned} margin={{ top: 8, right: 18, left: -10, bottom: 0 }}>
+          <AreaChart
+            data={cleaned}
+            margin={{ top: 8, right: 18, left: -10, bottom: 0 }}
+            style={{ overflow: "visible" }}
+          >
+            <defs>
+              <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={OCEAN_COLORS.teal} stopOpacity={0.5} />
+                <stop offset="50%" stopColor={OCEAN_COLORS.deep} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={OCEAN_COLORS.sand} stopOpacity={0.1} />
+              </linearGradient>
+            </defs>
+
             <XAxis
               dataKey="hour"
               tickLine={false}
@@ -67,7 +85,6 @@ export default function HourlyChart({ data }: { data: Point[] }) {
               tick={{ fill: "rgba(255,255,255,0.55)", fontSize: 12 }}
             />
 
-            {/* Left axis: wave height (ft) */}
             <YAxis
               yAxisId="wave"
               tickLine={false}
@@ -77,7 +94,6 @@ export default function HourlyChart({ data }: { data: Point[] }) {
               domain={[0, "auto"]}
             />
 
-            {/* Right axis: score (0-10) */}
             {hasScore && (
               <YAxis
                 yAxisId="score"
@@ -95,28 +111,36 @@ export default function HourlyChart({ data }: { data: Point[] }) {
               cursor={{ stroke: "rgba(255,255,255,0.10)" }}
             />
 
-            {/* Wave line */}
+            {/* Wave: smooth line */}
             <Line
               yAxisId="wave"
               type="monotone"
               dataKey="waveHeightFt"
               dot={false}
               strokeWidth={2}
-              stroke="rgba(255,255,255,0.80)"
+              stroke="rgba(255,255,255,0.75)"
+              strokeDasharray="0"
+              isAnimationActive
+              animationDuration={1200}
+              animationEasing="ease-out"
             />
 
-            {/* Score line (subtle) */}
+            {/* Score: elevation-style area (ocean colors, draw-in) */}
             {hasScore && (
-              <Line
+              <Area
                 yAxisId="score"
                 type="monotone"
                 dataKey="score"
-                dot={false}
+                stroke="rgba(45, 212, 191, 0.9)"
                 strokeWidth={2}
-                stroke="rgba(34,211,238,0.85)" // cyan-ish to match your theme
+                fill="url(#scoreGradient)"
+                isAnimationActive
+                animationDuration={1400}
+                animationEasing="ease-out"
+                baseValue={0}
               />
             )}
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>

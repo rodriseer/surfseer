@@ -16,6 +16,28 @@
   --border2: rgba(120, 200, 255, 0.16);
 
   --textDim: rgba(255, 255, 255, 0.72);
+
+  /* Dynamic accent (overridden by .spot-bg-* on spot page) */
+  --spot-accent: rgba(56, 189, 248, 0.08);
+}
+
+.font-heading {
+  font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-body {
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Score-based background accent (spot page) */
+.spot-bg-high {
+  --spot-accent: rgba(251, 191, 36, 0.06);
+}
+.spot-bg-mid {
+  --spot-accent: rgba(56, 189, 248, 0.06);
+}
+.spot-bg-low {
+  --spot-accent: rgba(148, 163, 184, 0.05);
 }
 
 html,
@@ -70,6 +92,14 @@ textarea {
   -webkit-backdrop-filter: blur(22px);
   border-radius: 24px;
   box-shadow: 0 18px 55px rgba(0, 0, 0, 0.45);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+@media (hover: hover) {
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  }
 }
 
 .card-lite {
@@ -78,6 +108,14 @@ textarea {
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-radius: 24px;
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+@media (hover: hover) {
+  .card-lite:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  }
 }
 
 /* Back-compat names used across your project */
@@ -98,11 +136,24 @@ textarea {
 }
 
 /* -----------------------
-   Typography
+   Typography (calm, spaced)
 ------------------------ */
 
 .section-title {
+  font-family: var(--font-heading);
   @apply text-xl sm:text-2xl font-extrabold tracking-tight;
+  letter-spacing: 0.04em;
+}
+
+/* Seer Labs: headings use Oswald, increased letter-spacing */
+.heading-hero {
+  font-family: var(--font-heading);
+  letter-spacing: 0.04em;
+}
+
+.heading-card {
+  font-family: var(--font-heading);
+  letter-spacing: 0.03em;
 }
 
 .gradient-text {
@@ -119,10 +170,12 @@ textarea {
 ------------------------ */
 
 .btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  overflow: hidden;
 
   border-radius: 16px;
   padding: 0.75rem 1rem;
@@ -130,8 +183,26 @@ textarea {
   font-size: 0.875rem;
   font-weight: 700;
 
-  transition: 160ms ease;
+  transition: 180ms ease;
   transform: translateZ(0);
+}
+
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.15) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 200ms ease, transform 400ms ease;
+}
+
+@media (hover: hover) {
+  .btn:hover::after {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 .btn:active {
@@ -187,17 +258,17 @@ textarea {
 }
 
 /* -----------------------
-   Animations
+   Animations (subtle, calm)
 ------------------------ */
 
 .fade-in {
-  animation: fadeIn 360ms ease-out both;
+  animation: fadeIn 480ms ease-out both;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -205,8 +276,60 @@ textarea {
   }
 }
 
+/* Slow ocean gradient shift (hero / background) */
+@keyframes oceanShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.bg-ocean-animate {
+  background-size: 200% 200%;
+  animation: oceanShift 24s ease-in-out infinite;
+}
+
+.spot-hero-overlay {
+  background-image: linear-gradient(120deg, var(--spot-accent) 0%, transparent 40%, rgba(0,0,0,0.25) 100%);
+  background-size: 200% 200%;
+  animation: oceanShift 24s ease-in-out infinite;
+}
+
+/* Grain overlay (organic texture) */
+.grain-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Score ring pulse (subtle) */
+@keyframes scorePulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.02); }
+}
+
+.score-ring-pulse::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 9999px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  animation: scorePulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Wind arrow subtle movement (opacity pulse so direction stays correct) */
+@keyframes windSway {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+.animate-wind-sway {
+  animation: windSway 3s ease-in-out infinite;
+}
+
 /* -----------------------
-   Score ring
+   Score ring (condition badge)
 ------------------------ */
 
 .score-ring {
@@ -232,6 +355,18 @@ textarea {
   background: rgba(56, 189, 248, 0.10);
   filter: blur(28px);
   z-index: -1;
+}
+
+/* High score (7+): subtle glow */
+.score-ring--high {
+  box-shadow:
+    0 25px 70px rgba(0, 0, 0, 0.45),
+    0 0 40px rgba(52, 211, 153, 0.15);
+}
+
+.score-ring--high::after {
+  background: rgba(52, 211, 153, 0.12);
+  filter: blur(32px);
 }
 
 @media (min-width: 640px) {

@@ -1,8 +1,21 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
+import { Oswald, Inter } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import TopNav from "@/components/TopNav";
+
+const oswald = Oswald({
+  subsets: ["latin"],
+  variable: "--font-heading",
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+});
 
 export const viewport = {
   width: "device-width",
@@ -28,8 +41,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen text-white bg-ocean relative overflow-x-hidden">
+    <html lang="en" className={`${oswald.variable} ${inter.variable}`}>
+      <body className="min-h-screen text-white bg-ocean relative overflow-x-hidden font-body antialiased">
         {/* Background FX */}
         <div className="pointer-events-none fixed inset-[-40%] z-0 overflow-visible">
           <div className="surf-shimmer" />
